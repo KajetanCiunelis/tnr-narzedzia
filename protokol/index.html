@@ -1,0 +1,1093 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Protokół reakcji – TNR</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&display=swap">
+<style>
+/* Szata AWF: zieleń 006341 / 004A30, biel, zielone odcienie, Lato (księga znaku).
+   Żółty FBAE40 tylko jako kształt albo pole z zielonym tekstem, nigdy żółty tekst na bieli. */
+:root{
+  color-scheme:light;
+  --bg:#ffffff; --panel:#f2f7f4; --tile:#e3eee8; --line:#c9d6cf;
+  --ink:#1f2933; --muted:#55636b;
+  --brand:#006341; --brand-dk:#004a30; --accent:#006341; --on-brand:#ffffff; --brand-sub:#cfe3d8;
+  --yellow:#fbae40; --on-yellow:#004a30;
+  --wait:#004a30; --err:#b3261e; --err-bg:#fcebea;
+  --shape:#1f2933; --finish:#1f2933; --stroop:#0f1a15;
+  --person:#a3b3ab; --medline:#006341;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  color-scheme:dark;
+  --bg:#0d1613; --panel:#14211c; --tile:#1c2d26; --line:#293b33;
+  --ink:#e8f1ec; --muted:#a3b6ac; --accent:#7ad3a6;
+  --wait:#003a26; --err:#e5534b; --err-bg:#3a1b19;
+  --shape:#e8f1ec; --finish:#e8f1ec; --stroop:#0a120f;
+  --person:#4f625a; --medline:#46b583;
+}}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0d1613; --panel:#14211c; --tile:#1c2d26; --line:#293b33;
+  --ink:#e8f1ec; --muted:#a3b6ac; --accent:#7ad3a6;
+  --wait:#003a26; --err:#e5534b; --err-bg:#3a1b19;
+  --shape:#e8f1ec; --finish:#e8f1ec; --stroop:#0a120f;
+  --person:#4f625a; --medline:#46b583;
+}
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Lato,"Segoe UI",Arial,sans-serif;font-size:16px;line-height:1.5;
+  -webkit-text-size-adjust:100%;touch-action:manipulation;caret-color:var(--brand)}
+::selection{background:var(--brand);color:var(--on-brand)}
+.wrap{max-width:560px;margin:0 auto;padding-block:16px 40px;padding-inline:16px}
+.view{display:flex;flex-direction:column;gap:14px}
+[hidden]{display:none !important}
+h1{font-size:25px;font-weight:900;margin:0;line-height:1.15;text-wrap:balance}
+h2{font-size:15px;font-weight:900;margin:8px 0 0;color:var(--accent)}
+.sub{color:var(--muted);font-size:14px;margin:0}
+.eyebrow{font-size:14px;color:var(--muted);font-weight:700}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+button{font:inherit;cursor:pointer}
+.ico{width:18px;height:18px;flex:0 0 auto;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+button.primary{flex:1 1 auto;background:var(--brand);color:var(--on-brand);border:0;border-radius:8px;padding:13px 16px;font-weight:700}
+button.primary:hover{background:var(--brand-dk)}
+button.ghost{flex:1 1 auto;background:transparent;color:var(--ink);border:1.5px solid var(--line);border-radius:8px;padding:12px 16px;font-weight:700}
+button.ghost:hover{border-color:var(--accent);color:var(--accent)}
+button:active{transform:translateY(1px)}
+button.sm{flex:0 0 auto;padding:7px 12px 7px 8px;font-size:14px;display:inline-flex;align-items:center;gap:4px}
+button:disabled{opacity:.45;cursor:not-allowed}
+button:focus-visible,.arena:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid var(--yellow);outline-offset:2px}
+a{color:var(--accent);text-underline-offset:3px;font-weight:700}
+input[type=checkbox]{accent-color:var(--brand)}
+
+/* nagłówek: pas w zieleni AWF */
+.band{position:relative;background:var(--brand);color:var(--on-brand);border-radius:14px;padding:20px 18px 18px;display:flex;flex-direction:column;gap:8px;overflow:hidden}
+.band .sub{color:var(--brand-sub)}
+.band .org{font-size:13px;font-weight:700;color:var(--brand-sub);margin:4px 0 0}
+.band .mark{width:36px;height:6px;background:var(--yellow);border-radius:1px}
+.band::after{content:"";position:absolute;right:-28px;bottom:-28px;width:96px;height:96px;border:14px solid rgba(255,255,255,.07);border-radius:50%}
+
+/* lista zadań: jeden panel, wiersze rozdzielone linią */
+.block{display:flex;flex-direction:column;gap:6px}
+.list{background:var(--panel);border-radius:12px;overflow:hidden}
+.mod{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:transparent;color:var(--ink);border:0;border-top:1px solid var(--line);padding:12px 12px 12px 14px}
+.mod:first-child{border-top:0}
+.mod:hover{background:var(--tile)}
+.mod .num{flex:0 0 28px;height:28px;border-radius:50%;display:grid;place-items:center;border:1.5px solid var(--line);font-weight:900;font-size:13px;font-variant-numeric:tabular-nums;color:var(--muted)}
+.mod.done .num{background:var(--brand);border-color:var(--brand);color:var(--on-brand)}
+.mod .txt{flex:1 1 auto;min-width:0}
+.mod .nm{font-weight:700}
+.mod .ds{font-size:13px;color:var(--muted)}
+.mod .val{flex:0 0 auto;font-weight:900;font-variant-numeric:tabular-nums;font-size:15px;text-align:right}
+.mod .val small{display:block;font-weight:400;font-size:12px;color:var(--muted)}
+.mod .val.go{color:var(--accent);font-weight:700;font-size:14px}
+.mod > .ico{color:var(--muted)}
+.settings{display:flex;gap:16px;flex-wrap:wrap;font-size:14px;color:var(--muted)}
+.settings label{display:flex;gap:6px;align-items:center}
+
+/* ekran zadania */
+.runhead{display:flex;align-items:center;gap:10px}
+.runhead .t{flex:1 1 auto;min-width:0}
+.runTitle{font-weight:900;font-size:18px;line-height:1.2}
+.prog{margin-top:2px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums;font-size:13px}
+.arena{position:relative;border-radius:14px;height:min(62vh,460px);min-height:320px;background:var(--panel);overflow:hidden;
+  cursor:pointer;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.arena.wait{background:var(--wait);color:#ffffff}
+.arena.go{background:var(--yellow);color:var(--on-yellow)}
+.arena.err{background:var(--err);color:#ffffff}
+.arena.dark{background:var(--stroop);color:#f2f2f2}
+.msg{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:16px;gap:6px}
+.msg .big{font-size:32px;font-weight:900;line-height:1.1;text-wrap:balance}
+.msg .hint{font-size:15px;opacity:.85;max-width:34ch}
+.msg .msNum{font-size:60px;font-weight:900;font-variant-numeric:tabular-nums;line-height:1}
+.msg .cta{margin-top:14px;font-weight:900;background:var(--brand);color:var(--on-brand);border-radius:8px;padding:10px 20px}
+.msg .lbl{font-size:14px;font-weight:700;color:var(--muted)}
+.ok-ico{width:64px;height:64px;stroke:var(--accent);fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.digit{font-size:136px;font-weight:900;line-height:1;font-variant-numeric:tabular-nums;color:var(--accent)}
+.fix{font-size:48px;font-weight:400;opacity:.6}
+.grid{position:absolute;inset:0;display:grid;gap:8px;padding:8px}
+.grid.n2{grid-template-columns:1fr 1fr}
+.grid.n4{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr}
+.tile{background:var(--tile);border-radius:10px;display:grid;place-items:center;font-weight:900;font-size:28px;color:var(--muted)}
+.tile.hit{background:var(--yellow);color:var(--on-yellow)}
+.arena.wait .tile{background:rgba(255,255,255,.12);color:rgba(255,255,255,.7)}
+.arena.wait .tile.hit{background:var(--yellow);color:var(--on-yellow)}
+.shape{fill:var(--shape);display:block}
+.cell{position:absolute;display:grid;place-items:center}
+.cell.reveal{outline:3px solid var(--err);outline-offset:-4px;border-radius:10px}
+/* ruchomy cel: jadąca kreska ma dokładnie wymiary linii mety */
+.track{position:absolute;inset:0}
+.track .rail{position:absolute;left:4%;right:4%;top:50%;height:2px;margin-top:-1px;background:var(--line)}
+.track .finish,.track .mover{position:absolute;top:30%;bottom:30%;width:4px;margin-left:-2px}
+.track .finish{left:78%;background:var(--finish)}
+.track .mover{left:0;background:var(--brand);will-change:transform}
+.track .tl{position:absolute;left:0;right:0;top:12px;text-align:center;font-size:14px;color:var(--muted);font-weight:700}
+.track .fb{position:absolute;left:0;right:0;bottom:10%;text-align:center}
+.track .fb b{font-size:34px;font-weight:900;font-variant-numeric:tabular-nums}
+.stroop{position:absolute;inset:0;display:flex;flex-direction:column;gap:10px;padding:10px}
+.sbox{flex:1 1 auto;display:grid;place-items:center;font-size:clamp(34px,10vw,52px);font-weight:900;letter-spacing:.02em}
+.srow{flex:0 0 30%;display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.sbtn{border-radius:10px;border:2px solid rgba(255,255,255,.22)}
+.scale{position:relative;width:min(80%,320px);height:12px;margin-top:12px;border-radius:6px;background:var(--tile)}
+.scale .mid{position:absolute;left:50%;top:-5px;bottom:-5px;width:2px;margin-left:-1px;background:var(--ink)}
+.scale .mark{position:absolute;top:50%;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;background:var(--brand)}
+.scaleLbl{display:flex;justify-content:space-between;width:min(80%,320px);font-size:13px;opacity:.8}
+
+.status{font-size:14px;color:var(--muted);min-height:20px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;min-height:26px}
+.chip{background:var(--tile);border-radius:6px;padding:2px 9px;font-size:14px;font-variant-numeric:tabular-nums}
+.chip.bad{background:var(--err-bg);color:var(--err);font-weight:700}
+.card{background:var(--panel);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.resMain{font-size:30px;font-weight:900;font-variant-numeric:tabular-nums;line-height:1.1;color:var(--accent)}
+.resSub{font-size:15px;color:var(--muted)}
+.resNote{font-size:15px;background:var(--bg);border-radius:8px;padding:9px 11px}
+.note{background:var(--panel);color:var(--ink);border-radius:10px;padding:11px 13px;font-size:14px;display:flex;flex-direction:column;gap:6px}
+.note p{margin:0}
+.note details{font-size:14px}
+.note details p{margin:6px 0 0}
+details{font-size:15px;color:var(--ink)}
+summary{cursor:pointer;font-weight:700;color:var(--accent)}
+details p{margin:6px 0;max-width:65ch}
+
+/* podsumowanie */
+table{width:100%;border-collapse:collapse;font-size:15px}
+th,td{text-align:left;padding:7px 4px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:13px;color:var(--muted)}
+td.v{font-weight:900;font-variant-numeric:tabular-nums;white-space:nowrap}
+td.r{color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:14px;font-weight:700;background:var(--bg);padding:2px 6px;border-radius:4px;word-break:break-word;line-height:1.7}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.form label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);font-weight:700}
+.form label.full{grid-column:1 / -1}
+input,select{font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:8px;padding:9px 10px;width:100%}
+input:focus,select:focus{border-color:var(--brand)}
+.ok{color:var(--accent);font-weight:700}
+.err{color:var(--err);font-weight:700}
+.places{display:grid;grid-template-columns:1fr auto;gap:4px 12px;font-size:15px}
+.places b{font-variant-numeric:tabular-nums}
+
+/* tablica */
+.tabs{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+#boardTabs{display:flex;flex-direction:column;gap:8px}
+.tabLabel{font-size:13px;font-weight:700;color:var(--muted);min-width:8em}
+.chartBox{background:var(--panel);border-radius:12px;padding:12px 8px}
+.chart{width:100%;height:auto;display:block;max-height:calc(100vh - 350px);min-height:240px}
+.chart .grid{stroke:var(--line);stroke-width:1}
+.chart .zero{stroke:var(--ink);stroke-width:1.5;stroke-dasharray:5 5}
+.chart .ax{fill:var(--muted);font-size:17px;font-family:Lato,"Segoe UI",Arial,sans-serif}
+.chart .pline{fill:none;stroke:var(--person);stroke-width:2}
+.chart .pdot{fill:var(--person);stroke:var(--panel);stroke-width:2}
+.chart .mline{fill:none;stroke:var(--medline);stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
+.chart .mdot{fill:var(--medline);stroke:var(--panel);stroke-width:2}
+.chart .mlab{fill:var(--ink);font-size:21px;font-weight:900;font-family:Lato,"Segoe UI",Arial,sans-serif}
+.chart .mkey{fill:var(--ink);font-size:16px;font-weight:700;font-family:Lato,"Segoe UI",Arial,sans-serif}
+body.projector .tabLabel{font-size:16px}
+.tab{border:1.5px solid var(--line);background:transparent;color:var(--ink);border-radius:8px;padding:6px 12px;font-weight:700;font-size:14px}
+.tab[aria-pressed="true"]{background:var(--brand);color:var(--on-brand);border-color:var(--brand)}
+.lb{list-style:none;margin:0;padding:0;background:var(--panel);border-radius:12px;overflow:hidden}
+.lb li{display:grid;grid-template-columns:2.2em 1fr auto;gap:10px;align-items:center;padding:9px 14px;border-top:1px solid var(--line)}
+.lb li:first-child{border-top:0}
+.lb .pl{font-weight:900;color:var(--muted);font-variant-numeric:tabular-nums}
+.lb li:nth-child(-n+3) .pl{color:var(--accent)}
+.lb .nk{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb .sc{font-weight:900;font-variant-numeric:tabular-nums}
+.lb .sc small{font-weight:400;color:var(--muted)}
+body.projector .wrap{max-width:1100px}
+body.projector h1{font-size:36px}
+body.projector .tab{font-size:17px;padding:6px 14px}
+body.projector .band{padding:14px 18px 12px;gap:4px}
+body.projector .band .mark{display:none}
+body.projector .view{gap:10px}
+body.projector .wrap{padding-block:10px 16px}
+body.projector .lb li{font-size:30px;padding:12px 22px}
+body.projector .boardMeta,body.projector .band .sub{font-size:17px}
+.boardMeta{color:var(--muted);font-size:14px}
+.boardRule{color:var(--muted);font-size:15px}
+body.projector .boardRule{font-size:22px}
+@media (max-width:380px){.form{grid-template-columns:1fr}}
+@media (prefers-reduced-motion: no-preference){.arena{transition:background-color .06s}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ======================= START ======================= -->
+<section id="vHome" class="view">
+  <header class="band">
+    <span class="mark" aria-hidden="true"></span>
+    <h1>Protokół: reakcja, antycypacja, uwaga</h1>
+    <p class="sub">9 krótkich zadań, w każdym od 3 do 5 prób. Całość zajmuje około 4 minut. Trzymaj telefon w dłoni i reaguj kciukiem. Każde zadanie możesz potem powtórzyć osobno.</p>
+    <p class="org">Teoria nauczania ruchu, AWF Warszawa</p>
+  </header>
+  <div class="note">
+    <p>Zmierzony czas zawiera też opóźnienie ekranu i dotyku Twojego telefonu, zwykle 30–100 ms. Dlatego porównuj swoje wyniki między zadaniami. Na tablicy każdy ma inny telefon, więc traktuj ją jako zabawę, a nie normę.</p>
+    <details>
+      <summary>Skąd bierze się to opóźnienie</summary>
+      <p>Strona wie, kiedy wysłała obraz na ekran i kiedy telefon zgłosił dotyk. Nie widzi dwóch odcinków, które doliczają się do wyniku.</p>
+      <p><b>Ekran.</b> Obraz trzeba złożyć i pokazać przy najbliższym odświeżeniu. To zwykle 1–3 klatki, czyli 17–50 ms przy ekranie 60 Hz.</p>
+      <p><b>Dotyk.</b> Ekran dotykowy sprawdza położenie palca w krótkich odstępach, a system potrzebuje chwili na obróbkę. To zwykle 20–60 ms.</p>
+      <p id="hzLine" hidden></p>
+      <p>Na tym samym telefonie oba opóźnienia są prawie stałe, dlatego różnice między zadaniami są wiarygodne.</p>
+    </details>
+  </div>
+  <div class="row">
+    <button class="primary" id="startAll">Pełny protokół (~4 min)</button>
+    <button class="ghost" id="toSummary">Podsumowanie</button>
+  </div>
+  <div id="modList" style="display:flex;flex-direction:column;gap:14px"></div>
+  <div class="settings">
+    <span id="shortInfo"></span>
+  </div>
+</section>
+
+<!-- ======================= MODUŁ ======================= -->
+<section id="vRun" class="view" hidden>
+  <div class="runhead">
+    <button class="ghost sm" id="backBtn" aria-label="Wróć do listy zadań"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg> Lista</button>
+    <div class="t"><div class="runTitle" id="runTitle"></div><div class="prog"><span id="runBlock"></span>, zadanie <span id="runProg"></span></div></div>
+  </div>
+  <div class="arena" id="arena" tabindex="0" role="button" aria-label="Pole zadania"></div>
+  <div class="status" id="runStatus" aria-live="polite"></div>
+  <div class="chips" id="chips" aria-label="Wyniki prób"></div>
+  <div class="card" id="resCard" hidden>
+    <div class="eyebrow">Wynik</div>
+    <div class="resMain" id="resMain"></div>
+    <div class="resSub" id="resSub"></div>
+    <div class="resNote" id="resNote" hidden></div>
+    <details id="resInfo"><summary>Co to pokazuje</summary><div id="resInfoBody"></div></details>
+    <div class="row">
+      <button class="ghost" id="againBtn">Powtórz zadanie</button>
+      <button class="primary" id="nextBtn">Dalej</button>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= PODSUMOWANIE ======================= -->
+<section id="vSum" class="view" hidden>
+  <div class="row"><button class="ghost sm" id="sumBack"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg> Lista</button></div>
+  <div>
+    <h1>Twoje wyniki</h1>
+    <p class="sub" style="margin-top:6px">W kolumnie „Wynik” jest ostatnie podejście, w kolumnie „Rekord” najlepsze. Im mniej, tym lepiej.</p>
+  </div>
+  <div class="card"><table id="sumTable"></table></div>
+  <div class="card">
+    <div class="eyebrow">Kod wyniku do formularza</div>
+    <div><code id="sumCode">–</code></div>
+    <div class="row"><button class="primary" id="copyBtn">Kopiuj wynik</button><button class="ghost" id="clearBtn">Wyczyść moje wyniki</button></div>
+  </div>
+  <div class="card" id="sendCard">
+    <div class="eyebrow">Tablica wyników dla chętnych</div>
+    <p class="sub" style="margin:0">Wpisz pseudonim, a nie imię i nazwisko. PIN grupy podaje prowadzący, on też decyduje, do której grupy trafią wyniki. Wysyłamy tylko pseudonim, płeć (jeśli ją podasz) i wyniki.</p>
+    <div class="form">
+      <label class="full">Pseudonim<input id="fNick" maxlength="16" autocomplete="off" placeholder="np. Kangur7"></label>
+      <label>Płeć (opcjonalnie)<select id="fPlec"><option value="">nie podaję</option><option value="K">K</option><option value="M">M</option></select></label>
+      <label>PIN grupy<input id="fPin" maxlength="12" inputmode="numeric" autocomplete="off" placeholder="od prowadzącego"></label>
+    </div>
+    <div class="row"><button class="primary" id="sendBtn">Wyślij na tablicę</button><a id="boardLink" href="#" target="_blank" rel="noopener">pełna tablica</a></div>
+    <div id="sendMsg" aria-live="polite"></div>
+    <div id="myPlaces"></div>
+  </div>
+</section>
+
+<!-- ======================= TABLICA ======================= -->
+<section id="vBoard" class="view" hidden>
+  <header class="band">
+    <span class="mark" aria-hidden="true"></span>
+    <h1 id="boardTitle">Tablica wyników</h1>
+    <p class="sub" id="boardJoin"></p>
+  </header>
+  <div id="boardTabs"></div>
+  <div class="boardRule" id="boardRule"></div>
+  <div class="chartBox" id="boardChart" hidden></div>
+  <ol class="lb" id="boardList"></ol>
+  <div class="row boardMeta">
+    <span id="boardStamp"></span>
+    <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="boardAuto" checked style="width:auto"> przełączaj zakładki</label>
+  </div>
+</section>
+
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* ================= KONFIGURACJA =================
+   ENDPOINT: adres wdrożenia Google Apps Script (kończy się na /exec), instrukcja w ../apps_script/README.md.
+   Pusty = strona działa bez tablicy wyników (wszystko lokalnie). */
+const ENDPOINT = '';
+
+const Q = new URLSearchParams(location.search);
+const SHORT = Q.get('proby') === '3';
+const N = SHORT ? 3 : 5;            // poprawne próby na zadanie
+const MAXERR = N * 2;               // limit błędów, potem zadanie kończy się z tym, co jest
+const STORE = 'tnr_protokol_v1';
+const IV = 700;                     // tempo odliczania (ms)
+
+const $ = id => document.getElementById(id);
+const svg = (d, cls) => '<svg class="' + (cls || 'ico') + '" viewBox="0 0 24 24" aria-hidden="true">' + d + '</svg>';
+const ICON_NEXT = svg('<path d="M9 5l7 7-7 7"/>'), ICON_OK = svg('<path d="M4 12.5l5 5L20 6.5"/>', 'ok-ico');
+const rnd = n => Math.floor(Math.random() * n);
+const uni = (a, b) => a + Math.random() * (b - a);
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--){ const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const median = a => { const s = [...a].sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : Math.round((s[m - 1] + s[m]) / 2); };
+const mean = a => a.reduce((x, y) => x + y, 0) / a.length;
+const sd = a => { if (a.length < 2) return 0; const m = mean(a); return Math.sqrt(a.reduce((s, x) => s + (x - m) ** 2, 0) / (a.length - 1)); };
+const sgn = v => (v > 0 ? '+' : v < 0 ? '−' : '±') + Math.abs(v);
+// odmiana: 1 błąd, 2 błędy, 5 błędów
+const pl = (n, one, few, many) => n + ' ' + (n === 1 ? one : (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14)) ? few : many);
+const errTxt = n => n ? pl(n, 'błąd', 'błędy', 'błędów') : 'bez błędów';
+const slope = (xs, ys) => { const mx = mean(xs), my = mean(ys); let num = 0, den = 0; xs.forEach((x, i) => { num += (x - mx) * (ys[i] - my); den += (x - mx) ** 2; }); return den ? num / den : 0; };
+
+/* ================= STAN ================= */
+let S = { res: {}, best: {}, nick: '', kod: '', plec: '', pin: '' };
+try { Object.assign(S, JSON.parse(localStorage.getItem(STORE) || '{}')); } catch (e) {}
+function save(){ try { localStorage.setItem(STORE, JSON.stringify(S)); } catch (e) {} }
+if (Q.get('kod')) S.kod = Q.get('kod').toUpperCase().slice(0, 8);
+if (Q.get('pin')) S.pin = Q.get('pin').slice(0, 12);
+
+/* ================= SILNIK PRÓB =================
+   run = bieżące zadanie; przerwanie czyści timery, a wiszące obietnice po prostu nigdy się nie spełniają. */
+const arena = $('arena');
+let run = null, tapWaiter = null;
+function newRun(){ abortRun(); run = { aborted: false, timers: new Set() }; return run; }
+function abortRun(){ if (run){ run.aborted = true; run.timers.forEach(clearTimeout); } tapWaiter = null; }
+function sleep(ms){ const r = run; return new Promise(res => { const id = setTimeout(() => { r.timers.delete(id); if (!r.aborted) res(); }, Math.max(0, ms)); r.timers.add(id); }); }
+const sleepUntil = t => sleep(t - performance.now());
+function frame(){ const r = run; return new Promise(res => requestAnimationFrame(ts => { if (!r.aborted) res(ts); })); }
+// zmiana ekranu na początku klatki, znacznik czasu w następnej = po faktycznym wyświetleniu
+async function showAt(fn){ await frame(); fn(); await frame(); return performance.now(); }
+// następne dotknięcie (null po czasie); k = indeks elementu z data-k
+function tap(timeout){
+  const r = run;
+  return new Promise(res => {
+    const w = { res: v => { if (!r.aborted) res(v); } };
+    if (timeout != null){
+      w.to = setTimeout(() => { if (tapWaiter === w){ tapWaiter = null; w.res(null); } }, Math.max(0, timeout));
+      r.timers.add(w.to);
+    }
+    tapWaiter = w;
+  });
+}
+// jak tap, ale dotknięcia poza polami odpowiedzi są pomijane
+async function tapKey(timeout){
+  const end = performance.now() + timeout;
+  for (;;){ const v = await tap(Math.max(0, end - performance.now())); if (!v || v.k != null) return v; }
+}
+function deliver(t, k){
+  if (!tapWaiter) return;
+  const w = tapWaiter; tapWaiter = null; clearTimeout(w.to); w.res({ t, k });
+}
+const evTime = ev => (ev.timeStamp > 0 && Math.abs(performance.now() - ev.timeStamp) < 1000) ? ev.timeStamp : performance.now();
+arena.addEventListener('pointerdown', ev => {
+  const t = evTime(ev);
+  const c = ev.target.closest && ev.target.closest('[data-k]');
+  deliver(t, c ? +c.dataset.k : null);
+});
+arena.addEventListener('contextmenu', e => e.preventDefault());
+document.addEventListener('keydown', ev => {
+  if ($('vRun').hidden || !tapWaiter || ev.repeat) return;
+  let k;
+  if (ev.key === ' ' || ev.key === 'Enter') k = null;
+  else if (/^[1-4]$/.test(ev.key)) k = +ev.key - 1;
+  else return;
+  ev.preventDefault(); deliver(evTime(ev), k);
+});
+
+/* ================= RYSOWANIE ================= */
+function A(cls, html){ arena.className = 'arena ' + (cls || ''); arena.innerHTML = html; }
+const msg = (big, hint) => '<div class="msg"><div class="big">' + big + '</div>' + (hint ? '<div class="hint">' + hint + '</div>' : '') + '</div>';
+const msHTML = (v, hint) => '<div class="msg"><div class="msNum">' + v + '</div><div class="hint">' + (hint || 'ms') + '</div></div>';
+async function flash(big, hint, cls, ms){ A(cls || '', msg(big, hint)); await sleep(ms || 700); }
+function poly(n, r, rot){
+  const p = [];
+  for (let i = 0; i < n; i++){ const a = (rot - 90 + 360 * i / n) * Math.PI / 180; p.push((r * Math.cos(a)).toFixed(1) + ',' + (r * Math.sin(a)).toFixed(1)); }
+  return p.join(' ');
+}
+// figury o zbliżonym polu powierzchni
+const SHAPES = { sq: [4, 44, 45], pent: [5, 41, 0], hex: [6, 39, 0], tri: [3, 48, 0] };
+const SHAPE_PL = { sq: 'kwadrat', pent: 'pięciokąt', hex: 'sześciokąt', circ: 'koło', tri: 'trójkąt' };
+function shapeSVG(kind, size, rot){
+  const inner = kind === 'circ' ? '<circle r="36"/>' : '<polygon points="' + poly(SHAPES[kind][0], SHAPES[kind][1], SHAPES[kind][2] + (rot || 0)) + '"/>';
+  return '<svg class="shape" viewBox="-50 -50 100 100" width="' + size + '" height="' + size + '" aria-hidden="true">' + inner + '</svg>';
+}
+function gridHTML(n, target){
+  let h = '<div class="grid n' + n + '">';
+  for (let i = 0; i < n; i++) h += '<div class="tile' + (i === target ? ' hit' : '') + '" data-k="' + i + '">' + (i + 1) + '</div>';
+  return h + '</div>';
+}
+
+/* ================= ZADANIA ================= */
+function badRT(rt){ return rt < 100; }
+
+// 1–3: czas reakcji prosty i z wyborem
+function rtChoice(n, codeName){
+  return async ctx => {
+    const rts = []; let err = 0;
+    while (rts.length < N && err <= MAXERR){
+      ctx.status('próba ' + (rts.length + 1) + ' z ' + N);
+      A('wait', n > 1 ? gridHTML(n, -1) : msg('Czekaj…', 'próba ' + (rts.length + 1) + ' z ' + N));
+      const early = await tap(uni(1500, 3500));
+      if (early){ err++; ctx.bad('falstart'); await flash('Falstart', 'Za wcześnie. Poczekaj na sygnał.'); continue; }
+      const target = n > 1 ? rnd(n) : 0;
+      const p = n > 1 ? tapKey(2000) : tap(2000);
+      const goAt = await showAt(() => n === 1 ? A('go', msg('TERAZ!')) : A('wait', gridHTML(n, target)));
+      const r = await p;
+      if (!r){ err++; ctx.bad('brak'); await flash('Za wolno', 'Minęły ponad 2 sekundy. Powtarzamy próbę.'); continue; }
+      const rt = Math.round(r.t - goAt);
+      if (badRT(rt)){ err++; ctx.bad('falstart'); await flash('Falstart', 'Reakcja szybsza niż 100 ms to zgadywanie.'); continue; }
+      if (n > 1 && r.k !== target){ err++; ctx.bad('złe pole'); await flash('Złe pole', 'Zapaliło się pole ' + (target + 1) + '.'); continue; }
+      rts.push(rt); ctx.ok(rt + ' ms'); A('', msHTML(rt)); await sleep(500);
+    }
+    if (!rts.length) return null;
+    const med = median(rts);
+    return { score: med + 100 * err, main: med + ' ms', disp: med + ' ms',
+      sub: 'Mediana z ' + rts.length + ' prób, ' + errTxt(err) + '.', code: codeName + ' ' + med, det: { med, rts, err } };
+  };
+}
+
+// 4–5: odliczanie 3-2-1; tryb 'sygnal' (bodziec na „0”) albo 'rytm' (bez bodźca, trafić w „0”)
+function countdown(mode){
+  return async ctx => {
+    const out = []; let err = 0;
+    while (out.length < N && err <= MAXERR){
+      ctx.status('próba ' + (out.length + 1) + ' z ' + N);
+      A('', msg('<span class="fix">+</span>', 'zaraz odliczanie'));
+      await sleep(500);
+      let hit = null;
+      const p = tap(500 + 3 * IV + 1600).then(v => (hit = v, v));
+      const base = performance.now() + 500;
+      const st = []; let broke = false;
+      for (let k = 0; k < 3 && !broke; k++){
+        await sleepUntil(base + k * IV - 8); if (hit){ broke = true; break; }
+        st.push(await showAt(() => A('', '<div class="msg"><div class="digit">' + (3 - k) + '</div></div>')));
+        await sleepUntil(base + k * IV + 300); if (hit){ broke = true; break; }
+        A('', '');
+      }
+      if (mode === 'sygnal'){
+        if (!broke){ await sleepUntil(base + 3 * IV - 8); if (hit) broke = true; }
+        if (broke){ err++; ctx.bad('falstart'); await flash('Falstart', 'Dotknięcie przed sygnałem.'); continue; }
+        const goAt = await showAt(() => A('go', msg('TERAZ!')));
+        const r = await p;
+        if (!r){ err++; ctx.bad('brak'); await flash('Za wolno', 'Powtarzamy próbę.'); continue; }
+        const rt = Math.round(r.t - goAt);
+        if (badRT(rt)){ err++; ctx.bad(rt < 0 ? 'falstart' : rt + ' ms!'); await flash('Falstart', rt < 0 ? 'Dotknięcie przed sygnałem.' : rt + ' ms to za szybko na reakcję. W lekkoatletyce taki start też jest falstartem.', '', 1300); continue; }
+        out.push(rt); ctx.ok(rt + ' ms'); A('', msHTML(rt)); await sleep(500);
+      } else {
+        if (broke && st.length < 3){ err++; ctx.bad('za wcześnie'); await flash('Za wcześnie', 'Dotknij dopiero tam, gdzie wypadłoby „0”.'); continue; }
+        const expected = st[2] + (st[2] - st[0]) / 2;
+        const r = await p;
+        if (!r || r.t > expected + 1000){ err++; ctx.bad('brak'); await flash('Za późno', 'Dotknij w rytmie, tam gdzie wypadłoby „0”.'); continue; }
+        const e = Math.round(r.t - expected);
+        out.push(e); ctx.ok(sgn(e) + ' ms');
+        const pos = 50 + Math.max(-48, Math.min(48, e / 4));
+        A('', '<div class="msg"><div class="msNum">' + sgn(e) + '</div><div class="hint">' + (e > 0 ? 'ms za późno' : e < 0 ? 'ms za wcześnie' : 'ms, w punkt') + '</div>' +
+          '<div class="scale"><span class="mid"></span><span class="mark" style="left:' + pos + '%"></span></div><div class="scaleLbl"><span>za wcześnie</span><span>za późno</span></div></div>');
+        await sleep(900);
+      }
+    }
+    if (!out.length) return null;
+    if (mode === 'sygnal'){
+      const med = median(out);
+      return { score: med + 100 * err, main: med + ' ms', disp: med + ' ms', sub: 'Mediana z ' + out.length + ' prób, ' + errTxt(err) + ' (falstarty też się liczą).',
+        code: 'odliczanie ' + med, det: { med, rts: out, err } };
+    }
+    const ae = Math.round(mean(out.map(Math.abs))), ce = Math.round(mean(out)), ve = Math.round(sd(out));
+    return { score: ae + 100 * err, main: 'AE ' + ae + ' ms', disp: 'AE ' + ae + ' ms',
+      sub: 'Średnio ' + Math.abs(ce) + ' ms ' + (ce > 0 ? 'za późno' : 'za wcześnie') + ' (CE), rozrzut między próbami ' + ve + ' ms (VE), ' + errTxt(err) + '.',
+      code: 'rytm AE ' + ae, det: { ae, ce, ve, e: out, err } };
+  };
+}
+
+// 6: ruchomy cel (coincidence anticipation)
+const SPEED = [{ d: 1500, n: 'wolno', przy: 'wolnym' }, { d: 1000, n: 'średnio', przy: 'średnim' }, { d: 600, n: 'szybko', przy: 'szybkim' }];
+async function movingTarget(ctx){
+  const list = shuffle(SHORT ? [0, 1, 2] : [0, 1, 2, 0, 1, 2]);
+  const total = list.length, rec = []; let err = 0;
+  while (list.length && err <= MAXERR){
+    const sp = list[0];
+    ctx.status('próba ' + (rec.length + 1) + ' z ' + total + ', ' + SPEED[sp].n);
+    A('', '<div class="track"><div class="tl">' + SPEED[sp].n + '</div><div class="rail"></div><div class="finish"></div><div class="mover"></div></div>');
+    const ball = arena.querySelector('.mover'), W = arena.clientWidth;
+    const x0 = W * 0.08, xL = W * 0.78, xEnd = W * 0.97, v = (xL - x0) / SPEED[sp].d;
+    ball.style.transform = 'translateX(' + x0 + 'px)';
+    const delay = uni(700, 1400);
+    let hit = null;
+    tap(delay + (xEnd - x0) / v + 300).then(r => { hit = r; });
+    await sleep(delay);
+    if (hit){ err++; ctx.bad('za wcześnie'); await flash('Za wcześnie', 'Poczekaj, aż kreska ruszy.'); continue; }
+    let t0 = null;
+    await new Promise(res => {
+      const R = run;
+      function step(){
+        if (R.aborted) return;
+        const now = performance.now(); if (t0 === null) t0 = now;
+        if (hit){ ball.style.transform = 'translateX(' + Math.min(xEnd, x0 + v * (hit.t - t0)) + 'px)'; return res(); }
+        const x = x0 + v * (now - t0);
+        if (x >= xEnd){ ball.style.transform = 'translateX(' + xEnd + 'px)'; return res(); }
+        ball.style.transform = 'translateX(' + x + 'px)'; requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    });
+    if (!hit){ err++; ctx.bad('brak'); await flash('Za późno', 'Kreska minęła już metę.'); continue; }
+    const e = Math.round(hit.t - (t0 + SPEED[sp].d));
+    list.shift(); rec.push({ sp, e }); ctx.ok(sgn(e) + ' ms');
+    const fb = document.createElement('div'); fb.className = 'fb';
+    fb.innerHTML = '<b>' + sgn(e) + ' ms</b><div class="hint">' + (e > 0 ? 'za późno' : e < 0 ? 'za wcześnie' : 'w punkt') + '</div>';
+    arena.querySelector('.track').appendChild(fb);
+    await sleep(900);
+  }
+  if (!rec.length) return null;
+  const es = rec.map(r => r.e), ae = Math.round(mean(es.map(Math.abs))), ce = Math.round(mean(es));
+  const per = SPEED.map((s, i) => { const x = rec.filter(r => r.sp === i).map(r => r.e); if (!x.length) return null; const m = Math.round(mean(x)); return 'przy ' + s.przy + ' ruchu ' + Math.abs(m) + ' ms ' + (m > 0 ? 'za późno' : 'za wcześnie'); }).filter(Boolean);
+  if (per.length) per[0] = per[0][0].toUpperCase() + per[0].slice(1);
+  return { score: ae + 100 * err, main: 'AE ' + ae + ' ms', disp: 'AE ' + ae + ' ms',
+    sub: 'Średnio ' + Math.abs(ce) + ' ms ' + (ce > 0 ? 'za późno' : 'za wcześnie') + ' (CE), ' + errTxt(err) + '.', note: per.join(', ') + '.',
+    code: 'cel AE ' + ae, det: { ae, ce, rec, err } };
+}
+
+// 7: go/no-go
+async function goNoGo(ctx){
+  const nGo = SHORT ? 5 : 7, nNo = SHORT ? 2 : 3;
+  const seq = shuffle([...Array(nGo).fill('sq'), ...shuffle(['pent', 'circ', 'tri']).slice(0, nNo)]);
+  if (seq[0] !== 'sq'){ const i = seq.indexOf('sq'); [seq[0], seq[i]] = [seq[i], seq[0]]; }
+  const rts = []; let comm = 0, omis = 0, prem = 0;
+  for (let i = 0; i < seq.length; i++){
+    const s = seq[i];
+    ctx.status('figura ' + (i + 1) + ' z ' + seq.length);
+    A('', msg('<span class="fix">+</span>'));
+    const early = await tap(uni(700, 1300));
+    if (early){ prem++; ctx.bad('za wcześnie'); await flash('Za wcześnie', 'Poczekaj na figurę.', '', 600); if (prem <= MAXERR) i--; continue; }
+    const p = tap(900);
+    const t0 = await showAt(() => A('', '<div class="msg">' + shapeSVG(s, 150) + '</div>'));
+    const r = await p;
+    if (s === 'sq'){
+      if (!r){ omis++; ctx.bad('pominięty'); await flash('Za wolno', 'Na kwadrat trzeba dotknąć.', '', 600); continue; }
+      const rt = Math.round(r.t - t0);
+      if (badRT(rt)){ prem++; ctx.bad('falstart'); await flash('Falstart', 'Reakcja szybsza niż 100 ms.', '', 600); continue; }
+      rts.push(rt); ctx.ok(rt + ' ms'); A('', msHTML(rt)); await sleep(350);
+    } else {
+      if (r){ comm++; ctx.bad(SHAPE_PL[s] + ', stop'); await flash('Stop!', 'To był ' + SHAPE_PL[s] + ', a nie kwadrat.', 'err', 800); }
+      else { ctx.ok('wstrzymane'); A('', msg(ICON_OK, 'Dobrze, bez dotykania.')); await sleep(350); }
+    }
+  }
+  if (!rts.length) return null;
+  const med = median(rts), e = comm + omis + prem;
+  return { score: med + 100 * e, main: med + ' ms', disp: med + ' ms',
+    sub: 'Mediana reakcji na kwadrat. Inne figury dotknięte ' + comm + ' z ' + nNo + ', pominięte kwadraty: ' + omis + (prem ? ', za wcześnie: ' + prem : '') + '.',
+    code: 'go/no-go ' + med + (comm ? ' (stop ' + comm + ')' : ''), det: { med, rts, comm, omis, prem } };
+}
+
+// 8: przeszukiwanie wzrokowe (kwadrat wśród pięciokątów, losowy obrót)
+function searchHTML(n){
+  const W = arena.clientWidth, H = arena.clientHeight, land = W > H;
+  const cols = land ? 7 : 5, rows = land ? 4 : 6, cw = W / cols, chh = H / rows, sz = Math.round(Math.min(cw, chh) * 0.6);
+  const cells = shuffle([...Array(cols * rows).keys()]).slice(0, n);
+  return cells.map((c, i) => {
+    const x = (c % cols) * cw, y = Math.floor(c / cols) * chh, jx = uni(-0.12, 0.12) * cw, jy = uni(-0.12, 0.12) * chh;
+    return '<div class="cell" data-k="' + (i === 0 ? 0 : 1) + '" style="left:' + (x + jx).toFixed(0) + 'px;top:' + (y + jy).toFixed(0) + 'px;width:' + cw.toFixed(0) + 'px;height:' + chh.toFixed(0) + 'px">' +
+      shapeSVG(i === 0 ? 'sq' : 'pent', sz, rnd(360)) + '</div>';
+  }).join('');
+}
+async function visualSearch(ctx){
+  const sizes = shuffle(SHORT ? [6, 12, 24] : [6, 12, 24, 6, 12, 24]);
+  const total = sizes.length, rec = []; let err = 0;
+  while (sizes.length && err <= MAXERR){
+    const n = sizes[0];
+    ctx.status('próba ' + (rec.length + 1) + ' z ' + total + ', ' + n + ' figur');
+    A('', msg('<span class="fix">+</span>'));
+    const early = await tap(800);
+    if (early){ err++; ctx.bad('za wcześnie'); await flash('Za wcześnie', 'Poczekaj na figury.'); continue; }
+    const p = tap(8000);
+    const t0 = await showAt(() => A('', searchHTML(n)));
+    const r = await p;
+    if (!r || r.k !== 0){
+      err++; ctx.bad(r ? 'pudło' : 'brak');
+      const t = arena.querySelector('[data-k="0"]'); if (t) t.classList.add('reveal');
+      await sleep(900); continue;
+    }
+    const rt = Math.round(r.t - t0);
+    sizes.shift(); rec.push({ n, rt }); ctx.ok(n + ': ' + rt + ' ms'); A('', msHTML(rt)); await sleep(450);
+  }
+  if (!rec.length) return null;
+  const med = median(rec.map(r => r.rt));
+  const per = [6, 12, 24].map(n => { const x = rec.filter(r => r.n === n).map(r => r.rt); return x.length ? 'przy ' + n + ' figurach ' + median(x) + ' ms' : null; }).filter(Boolean);
+  if (per.length) per[0] = 'P' + per[0].slice(1);
+  const sl = Math.round(slope(rec.map(r => r.n), rec.map(r => r.rt)));
+  return { score: med + 100 * err, main: med + ' ms', disp: med + ' ms', sub: 'Mediana ze wszystkich prób, ' + errTxt(err) + '.',
+    note: per.join(', ') + '. Każda kolejna figura dokłada około ' + sl + ' ms.',
+    code: 'szukanie ' + med + ' (' + sl + ' ms na figurę)', det: { med, slope: sl, rec, err } };
+}
+
+// 9: Stroop
+const COLORS = [{ w: 'CZERWONY', c: '#ff4d4d', l: 'czerwony', p: 'czerwone' }, { w: 'ZIELONY', c: '#33c75a', l: 'zielony', p: 'zielone' }, { w: 'NIEBIESKI', c: '#5b8cff', l: 'niebieski', p: 'niebieskie' }, { w: 'ŻÓŁTY', c: '#ffd23f', l: 'żółty', p: 'żółte' }];
+function stroopHTML(t){
+  const word = t ? '<span style="color:' + COLORS[t.ink].c + '">' + COLORS[t.word].w + '</span>' : '<span class="fix">+</span>';
+  return '<div class="stroop"><div class="sbox">' + word + '</div><div class="srow">' +
+    COLORS.map((c, i) => '<div class="sbtn" data-k="' + i + '" style="background:' + c.c + '" aria-label="' + c.l + '"></div>').join('') + '</div></div>';
+}
+async function stroop(ctx){
+  const trials = shuffle([...Array(N)].map(() => ({ cong: true })).concat([...Array(N)].map(() => ({ cong: false }))));
+  trials.forEach(t => { t.word = rnd(4); t.ink = t.cong ? t.word : (t.word + 1 + rnd(3)) % 4; });
+  const rec = []; let err = 0, early = 0;
+  for (let i = 0; i < trials.length; i++){
+    const t = trials[i];
+    ctx.status('słowo ' + (i + 1) + ' z ' + trials.length);
+    A('dark', stroopHTML(null));
+    if (await tap(uni(500, 900))){ early++; ctx.bad('za wcześnie'); await flash('Za wcześnie', 'Poczekaj na słowo.', 'dark', 600); if (early <= MAXERR) i--; continue; }
+    const p = tapKey(3000);
+    const t0 = await showAt(() => A('dark', stroopHTML(t)));
+    const r = await p;
+    if (!r){ err++; ctx.bad('brak'); await flash('Za wolno', 'Liczy się kolor liter.', 'dark', 700); continue; }
+    const rt = Math.round(r.t - t0);
+    if (r.k !== t.ink){ err++; ctx.bad('błąd'); await flash('Błąd', 'Litery były ' + COLORS[t.ink].p + (t.cong ? '.' : ', a słowo to „' + COLORS[t.word].l + '”.'), 'dark', 900); continue; }
+    rec.push({ cong: t.cong, rt }); ctx.ok((t.cong ? 'zgodne ' : 'niezgodne ') + rt);
+  }
+  if (!rec.length) return null;
+  const all = median(rec.map(r => r.rt)), c = rec.filter(r => r.cong).map(r => r.rt), ic = rec.filter(r => !r.cong).map(r => r.rt);
+  const mc = c.length ? median(c) : null, mi = ic.length ? median(ic) : null, cost = (mc != null && mi != null) ? mi - mc : null;
+  return { score: all + 100 * (err + early), main: all + ' ms', disp: all + ' ms',
+    sub: 'Mediana poprawnych odpowiedzi, ' + errTxt(err) + (early ? ', za wcześnie: ' + early : '') + '.',
+    note: cost != null ? 'Słowa zgodne ' + mc + ' ms, niezgodne ' + mi + ' ms. ' + (cost > 0 ? 'Koszt interferencji to ' + cost + ' ms.' : 'Tym razem niezgodne słowa nie spowolniły odpowiedzi.') : null,
+    code: 'Stroop ' + all + (cost != null ? ' (koszt ' + cost + ')' : ''), det: { med: all, mc, mi, cost, err, early } };
+}
+
+const BLOCKS = { A: 'Szybkość reakcji', B: 'Antycypacja', C: 'Zadania poznawcze' };
+const MODS = [
+  { id: 'prosty', b: 'A', name: 'Czas reakcji prosty', ds: 'jeden sygnał, jedna odpowiedź', run: rtChoice(1, 'prosty'), rule: 'mediana plus 100 ms za każdy błąd',
+    instr: 'Gdy pole jest ciemnozielone, czekaj. Kiedy zrobi się żółte, dotknij jak najszybciej. Dotknięcie przed żółtym to falstart.',
+    info: '<p>Prosty czas reakcji to czas od sygnału do początku odpowiedzi, kiedy z góry wiadomo, jaki będzie sygnał i co trzeba zrobić. U dorosłych to zwykle 180–250 ms, bez opóźnienia telefonu.</p><p>Odstęp do sygnału jest losowy, żeby nie dało się go przewidzieć. Porównaj ten wynik z zadaniem 4.</p>' },
+  { id: 'wybor2', b: 'A', name: 'Wybór 2', ds: 'dotknij pole, które się zapali', run: rtChoice(2, 'wybór 2'), rule: 'mediana plus 100 ms za każdy błąd',
+    instr: 'Dwa pola na ciemnym tle. Gdy jedno zapali się na żółto, dotknij właśnie je.',
+    info: '<p>Dochodzi etap wyboru odpowiedzi. Trzeba rozpoznać, które pole się zapaliło, i wybrać ruch, więc czas jest dłuższy niż w reakcji prostej.</p>' },
+  { id: 'wybor4', b: 'A', name: 'Wybór 4', ds: 'cztery pola', run: rtChoice(4, 'wybór 4'), rule: 'mediana plus 100 ms za każdy błąd',
+    instr: 'Cztery pola. Dotknij to, które zapali się na żółto.',
+    info: '<p><b>Prawo Hicka</b> mówi, że czas reakcji z wyborem rośnie liniowo z logarytmem liczby możliwości: RT = a + b·log₂N. Przejście z jednego pola na dwa i z dwóch na cztery to za każdym razem jeden bit informacji, więc oba przyrosty powinny być podobne.</p><p>W sporcie im więcej możliwych zagrań ma przeciwnik, tym dłużej trwa decyzja. Dlatego zawodnik stara się zawęzić możliwości, czytając wskazówki, a atakujący stara się je mnożyć.</p>' },
+  { id: 'odliczanie', b: 'B', name: 'Sygnał po odliczaniu', ds: 'odliczanie i sygnał na „0”', run: countdown('sygnal'), rule: 'mediana plus 100 ms za każdy falstart lub błąd',
+    instr: 'Zobaczysz odliczanie 3, 2, 1 w stałym tempie, a potem żółty sygnał dokładnie w miejscu „0”. Reaguj na sygnał. Reakcja szybsza niż 100 ms to falstart.',
+    info: '<p>To przygotowanie czasowe. Gdy wiadomo, kiedy przyjdzie sygnał, reakcja jest krótsza niż przy losowym odstępie, bo część pracy mózg wykonuje wcześniej. Porównaj wynik z zadaniem 1.</p><p>Granica 100 ms pochodzi z przepisów lekkoatletycznych. Szybszą „reakcję” uznaje się za zgadywanie, czyli falstart. Dlatego starter za każdym razem zmienia odstęp między komendą „gotowi” a strzałem.</p>' },
+  { id: 'rytm', b: 'B', name: 'Trafienie w rytm', ds: 'dotknij na „0”, sygnału nie będzie', run: countdown('rytm'), rule: 'średni błąd bezwzględny (AE) plus 100 ms za każdą pominiętą próbę',
+    instr: 'Zobaczysz odliczanie 3, 2, 1. Na „0” nic się nie pojawi. Dotknij dokładnie w rytmie, tam gdzie wypadłoby „0”.',
+    info: '<p>To antycypacja czasowa bez sygnału, bo ruch trzeba zaplanować z góry. W nauce o ruchu używa się trzech miar błędu. CE, czyli błąd stały, mówi, czy średnio jesteś za wcześnie, czy za późno. VE, czyli błąd zmienny, mówi, jak powtarzalne są Twoje próby. AE, czyli błąd bezwzględny, to ogólna dokładność.</p><p>Przykłady ze sportu to wyjście do piłki, odbicie w rytmie rozbiegu i start w sztafecie.</p>' },
+  { id: 'cel', b: 'B', name: 'Ruchomy cel', ds: 'kreska dojeżdża do mety', run: movingTarget, rule: 'średni błąd bezwzględny (AE) plus 100 ms za każdą pominiętą próbę',
+    instr: 'Zielona kreska ruszy w stronę ciemnej linii mety. Dotknij w chwili, gdy się z nią zrówna. Prędkości są różne.',
+    info: '<p>To antycypacja zbieżności (coincidence anticipation). Trzeba przewidzieć, kiedy obiekt dotrze do celu, i ruszyć wcześniej o czas reakcji i ruchu.</p><p>Wiele osób przy wolnym ruchu dotyka za wcześnie, a przy szybkim za późno. Sprawdź, jak jest u Ciebie. W sporcie tak samo działa odbiór piłki, uderzenie w tenisie i blok w siatkówce.</p>' },
+  { id: 'gonogo', b: 'C', name: 'Go/No-go', ds: 'dotykasz tylko kwadratu', run: goNoGo, rule: 'mediana plus 100 ms za każdy błąd',
+    instr: 'Będą pojawiać się figury. Dotknij tylko kwadratu, a na każdą inną figurę nie reaguj.',
+    info: '<p>Kwadrat pojawia się często, więc dotykanie staje się nawykiem i trudno je zatrzymać. Dotknięcie innej figury to błąd hamowania.</p><p>W sporcie tak wygląda sytuacja bramkarza przy zwodzie albo obrońcy przy markowanym podaniu. Rozpoczęty ruch trzeba wtedy zatrzymać.</p>' },
+  { id: 'szukanie', b: 'C', name: 'Przeszukiwanie wzrokowe', ds: 'kwadrat wśród 6–24 figur', run: visualSearch, rule: 'mediana plus 100 ms za każdy błąd',
+    instr: 'Wśród pięciokątów jest jeden kwadrat. Znajdź go i dotknij. Figur jest raz mniej, raz więcej.',
+    info: '<p>Gdy cel różni się od reszty jedną wyraźną cechą, na przykład kolorem, od razu rzuca się w oczy i liczba pozostałych figur nie ma znaczenia. Gdy jest do nich podobny, trzeba je przeglądać po kolei, więc każda figura wydłuża szukanie.</p><p>W sporcie tak szuka się wolnego partnera do podania. Doświadczeni zawodnicy wiedzą, gdzie patrzeć, więc przeglądają mniej.</p>' },
+  { id: 'stroop', b: 'C', name: 'Stroop', ds: 'kolor liter, nie słowo', run: stroop, rule: 'mediana plus 100 ms za każdy błąd',
+    instr: 'Pojawi się nazwa koloru napisana jakimś kolorem. Dotknij plamę w kolorze <b>liter</b>, a nie tę, którą oznacza słowo.',
+    info: '<p><b>Efekt Stroopa</b> polega na tym, że nazwanie koloru liter trwa dłużej, gdy słowo oznacza inny kolor. Czytamy automatycznie, więc słowo przeszkadza, nawet gdy go nie potrzebujemy. W drugą stronę to prawie nie działa: kolor liter nie przeszkadza w czytaniu.</p><p>Dla nauczania ruchu wynika z tego, że utrwalony nawyk uruchamia się sam. Dlatego tak trudno przebudować źle wyuczoną technikę. Przy zaburzeniach widzenia barw ten wynik nie jest miarodajny.</p>' }
+];
+const MOD = Object.fromEntries(MODS.map(m => [m.id, m]));
+
+/* ================= WIDOKI ================= */
+function showView(id){ ['vHome', 'vRun', 'vSum', 'vBoard'].forEach(v => { $(v).hidden = v !== id; }); window.scrollTo(0, 0); }
+
+function renderHome(){
+  const box = $('modList'); box.textContent = '';
+  Object.keys(BLOCKS).forEach(b => {
+    const blk = document.createElement('div'); blk.className = 'block';
+    const h = document.createElement('h2'); h.textContent = BLOCKS[b]; blk.appendChild(h);
+    const list = document.createElement('div'); list.className = 'list';
+    MODS.filter(m => m.b === b).forEach(m => {
+      const i = MODS.indexOf(m), r = S.res[m.id];
+      const btn = document.createElement('button'); btn.className = 'mod' + (r ? ' done' : '');
+      btn.innerHTML = '<span class="num">' + (i + 1) + '</span><span class="txt"><div class="nm"></div><div class="ds"></div></span><span class="val"></span>';
+      btn.querySelector('.nm').textContent = m.name; btn.querySelector('.ds').textContent = m.ds;
+      const val = btn.querySelector('.val');
+      if (r){ val.textContent = r.main; const s = document.createElement('small'); s.textContent = 'powtórz'; val.appendChild(s); }
+      else { val.className = 'val go'; val.textContent = 'zrób'; }
+      btn.insertAdjacentHTML('beforeend', ICON_NEXT);
+      btn.addEventListener('click', () => openModule(m.id, false));
+      list.appendChild(btn);
+    });
+    blk.appendChild(list); box.appendChild(blk);
+  });
+  $('shortInfo').textContent = SHORT ? 'wersja skrócona (3 próby)' : '';
+}
+
+let curMod = null, inProtocol = false;
+const ctx = {
+  status: t => { $('runStatus').textContent = t; },
+  ok: t => addChip(t, false),
+  bad: t => addChip(t, true)
+};
+function addChip(t, bad){ const c = document.createElement('span'); c.className = 'chip' + (bad ? ' bad' : ''); c.textContent = t; $('chips').appendChild(c); }
+
+async function openModule(id, protocol){
+  const r = newRun(); const m = MOD[id], idx = MODS.indexOf(m);
+  curMod = m; inProtocol = protocol;
+  showView('vRun');
+  $('runBlock').textContent = BLOCKS[m.b];
+  $('runTitle').textContent = (idx + 1) + '. ' + m.name;
+  $('runProg').textContent = (idx + 1) + ' z ' + MODS.length;
+  $('chips').textContent = ''; $('runStatus').textContent = ''; $('resCard').hidden = true;
+  A('', '<div class="msg"><div class="lbl">Zadanie ' + (idx + 1) + ' z ' + MODS.length + '</div><div class="big">' + m.name + '</div><div class="hint">' + m.instr + '</div><div class="cta">Dotknij, aby zacząć</div></div>');
+  arena.focus({ preventScroll: true });
+  await tap();
+  A('', ''); await sleep(300);
+  let res = null;
+  try { res = await m.run(ctx); }
+  catch (e){ console.error(e); A('', msg('Błąd', 'Odśwież stronę i spróbuj jeszcze raz.')); return; }
+  if (r.aborted) return;
+  finishModule(m, res);
+}
+
+function noteFor(m, res){
+  if (m.id === 'wybor2' || m.id === 'wybor4'){
+    const LBL = { prosty: 'prosty', wybor2: 'wybór 2', wybor4: 'wybór 4' };
+    const parts = ['prosty', 'wybor2', 'wybor4'].filter(k => S.res[k]).map(k => LBL[k] + ' ' + S.res[k].det.med + ' ms');
+    if (parts.length >= 2) return 'Twoje wyniki: ' + parts.join(', ') + '. Według prawa Hicka każde podwojenie liczby pól powinno dokładać mniej więcej tyle samo.';
+  }
+  if (m.id === 'odliczanie' && S.res.prosty){
+    const g = S.res.prosty.det.med - res.det.med;
+    return 'Z odliczaniem ' + res.det.med + ' ms, przy losowym odstępie (zadanie 1) ' + S.res.prosty.det.med + ' ms. ' + (g > 0 ? 'Przewidywanie skróciło reakcję o ' + g + ' ms.' : 'Tym razem przewidywanie nie skróciło reakcji.');
+  }
+  return res.note || null;
+}
+
+function finishModule(m, res){
+  const idx = MODS.indexOf(m);
+  $('runStatus').textContent = '';
+  if (!res){
+    A('', msg('Za dużo błędów', 'Nie ma wyniku. Powtórz zadanie spokojniej.'));
+  } else {
+    res.at = Date.now();
+    S.res[m.id] = res;
+    if (!S.best[m.id] || res.score < S.best[m.id].score) S.best[m.id] = { score: res.score, main: res.main, disp: res.disp, det: res.det };
+    save();
+    A('', '<div class="msg"><div class="lbl">Gotowe</div><div class="big">' + res.main + '</div><div class="hint">' + m.name + '</div></div>');
+  }
+  $('resMain').textContent = res ? res.main : '–';
+  $('resSub').textContent = res ? res.sub : 'Zbyt mało poprawnych prób.';
+  const note = res ? noteFor(m, res) : null;
+  $('resNote').hidden = !note; $('resNote').textContent = note || '';
+  $('resInfoBody').innerHTML = m.info;
+  $('resInfo').open = false;
+  const last = idx === MODS.length - 1;
+  $('nextBtn').textContent = last ? 'Podsumowanie' : 'Dalej: ' + MODS[idx + 1].name;
+  $('resCard').hidden = false;
+  $('resCard').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+$('startAll').addEventListener('click', () => openModule(MODS[0].id, true));
+$('againBtn').addEventListener('click', () => openModule(curMod.id, inProtocol));
+$('nextBtn').addEventListener('click', () => {
+  const idx = MODS.indexOf(curMod);
+  if (idx === MODS.length - 1){ abortRun(); renderSummary(); showView('vSum'); }
+  else openModule(MODS[idx + 1].id, inProtocol);
+});
+$('backBtn').addEventListener('click', () => { abortRun(); renderHome(); showView('vHome'); });
+$('toSummary').addEventListener('click', () => { renderSummary(); showView('vSum'); });
+$('sumBack').addEventListener('click', () => { renderHome(); showView('vHome'); });
+
+/* ================= PODSUMOWANIE ================= */
+function summaryCode(){ return MODS.filter(m => S.res[m.id]).map(m => S.res[m.id].code).join(', '); }
+function renderSummary(){
+  const tb = $('sumTable'); tb.textContent = '';
+  const hr = tb.insertRow(); ['Zadanie', 'Wynik', 'Rekord'].forEach(t => { const th = document.createElement('th'); th.textContent = t; hr.appendChild(th); });
+  MODS.forEach((m, i) => {
+    const r = S.res[m.id], b = S.best[m.id], tr = tb.insertRow();
+    const c1 = tr.insertCell(); c1.textContent = (i + 1) + '. ' + m.name;
+    const c2 = tr.insertCell(); c2.className = 'v'; c2.textContent = r ? r.main : '–';
+    const c3 = tr.insertCell(); c3.className = 'r'; c3.textContent = b ? b.main : '';
+  });
+  $('sumCode').textContent = summaryCode() || '– (zrób przynajmniej jedno zadanie)';
+  $('copyBtn').textContent = 'Kopiuj wynik';
+  $('sendCard').hidden = !ENDPOINT;
+  $('fNick').value = S.nick || ''; $('fPlec').value = S.plec || ''; $('fPin').value = S.pin || '';
+  updateBoardLink();
+  $('sendMsg').textContent = '';
+}
+function boardURL(kod){ return location.pathname + '?tablica' + (kod ? '&kod=' + encodeURIComponent(kod) : ''); }
+function updateBoardLink(){ $('boardLink').href = boardURL(S.kod || ''); }
+$('copyBtn').addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText(summaryCode()); $('copyBtn').textContent = 'Skopiowano'; }
+  catch (e){ $('copyBtn').textContent = 'Przepisz ręcznie'; }
+});
+// potwierdzenie drugim kliknięciem (confirm() bywa zablokowany, np. w podglądzie claude.ai)
+let clearArmed = null;
+$('clearBtn').addEventListener('click', () => {
+  const b = $('clearBtn');
+  if (!clearArmed){ b.textContent = 'Kliknij jeszcze raz, aby usunąć'; clearArmed = setTimeout(() => { clearArmed = null; b.textContent = 'Wyczyść moje wyniki'; }, 4000); return; }
+  clearTimeout(clearArmed); clearArmed = null; b.textContent = 'Wyczyść moje wyniki';
+  S.res = {}; S.best = {}; save(); renderSummary();
+});
+
+/* ================= TABLICA: API =================
+   Jedyne miejsce, które zna backend. Przejście na inny (np. Supabase) = wymiana tych dwóch funkcji. */
+const api = {
+  async send(payload){
+    // bez nagłówka Content-Type (text/plain) → brak zapytania wstępnego CORS w Apps Script
+    const r = await fetch(ENDPOINT, { method: 'POST', body: JSON.stringify(payload) });
+    const j = await r.json(); if (!j.ok){ const e = new Error(j.error || 'błąd serwera'); e.code = j.code; throw e; } return j;
+  },
+  async board(kod){
+    const r = await fetch(ENDPOINT + '?kod=' + encodeURIComponent(kod || '') + '&_=' + Date.now());
+    const j = await r.json(); if (!j.ok) throw new Error(j.error || 'błąd serwera'); return j.rows || [];
+  },
+  // wyniki do wykresów: ostatnie podejście każdej osoby, bez pseudonimów (p = numer osoby)
+  async group(kod){
+    const r = await fetch(ENDPOINT + '?tryb=grupa&kod=' + encodeURIComponent(kod || '') + '&_=' + Date.now());
+    const j = await r.json(); if (!j.ok) throw new Error(j.error || 'błąd serwera'); return j.rows || [];
+  }
+};
+function rankings(rows){
+  const by = {};
+  rows.forEach(r => { if (MOD[r.mod]) (by[r.mod] = by[r.mod] || []).push(r); });
+  Object.values(by).forEach(a => a.sort((x, y) => x.score - y.score));
+  return by;
+}
+const pkey = r => (r.kod || '') + '|' + String(r.nick).toLowerCase();
+// wielobój: suma miejsc; brak zadania = miejsce za ostatnim w tym zadaniu
+function allround(by){
+  const mods = Object.keys(by), people = {};
+  mods.forEach(m => by[m].forEach((r, i) => { const k = pkey(r); (people[k] = people[k] || { nick: r.nick, kod: r.kod, pl: {} }).pl[m] = i + 1; }));
+  return Object.values(people).map(p => {
+    let sum = 0, cnt = 0;
+    mods.forEach(m => { if (p.pl[m]){ sum += p.pl[m]; cnt++; } else sum += by[m].length + 1; });
+    return { nick: p.nick, kod: p.kod, sum, cnt };
+  }).sort((a, b) => a.sum - b.sum || b.cnt - a.cnt);
+}
+
+const SEND_ERR = {
+  pin: 'Nieprawidłowy PIN. Zapytaj prowadzącego o aktualny.',
+  off: 'Tablica wyników jest teraz wyłączona. Twoje wyniki zostają na telefonie.',
+  limit: 'Za dużo wysyłek naraz. Odczekaj kilka minut i spróbuj ponownie.',
+  locked: 'Za dużo prób z błędnym PIN-em. Spróbuj ponownie za 10 minut.'
+};
+$('sendBtn').addEventListener('click', async () => {
+  const nick = $('fNick').value.replace(/[<>"'`\\=+@]/g, '').trim().slice(0, 16);
+  const kod = S.kod || '';   // grupę i tak ustala serwer na podstawie PIN-u
+  const plec = $('fPlec').value;
+  const pin = $('fPin').value.trim().slice(0, 12);
+  const out = $('sendMsg');
+  if (!nick){ out.className = 'err'; out.textContent = 'Wpisz pseudonim.'; return; }
+  const wyniki = MODS.filter(m => S.res[m.id]).map(m => ({ mod: m.id, score: S.res[m.id].score, disp: S.res[m.id].disp, det: S.res[m.id].det }));
+  if (!wyniki.length){ out.className = 'err'; out.textContent = 'Najpierw zrób przynajmniej jedno zadanie.'; return; }
+  if (!pin){ out.className = 'err'; out.textContent = 'Wpisz PIN od prowadzącego. Bez niego wyniki zostają tylko na Twoim telefonie.'; return; }
+  S.nick = nick; S.plec = plec; S.pin = pin; save();
+  $('sendBtn').disabled = true; out.className = ''; out.textContent = 'Wysyłam…';
+  try {
+    const j = await api.send({ nick, kod, plec, pin, wyniki, ua: navigator.userAgent.slice(0, 80) });
+    if (j.kod){ S.kod = j.kod; save(); updateBoardLink(); }
+    out.className = 'ok'; out.textContent = 'Wysłano wyniki: ' + j.n + (S.kod ? ', grupa ' + S.kod : '') + '.';
+    showMyPlaces(nick, S.kod || '');
+  } catch (e){ out.className = 'err'; out.textContent = SEND_ERR[e.code] || ('Nie udało się wysłać (' + e.message + '). Sprawdź internet i spróbuj ponownie.'); }
+  finally { $('sendBtn').disabled = false; }
+});
+async function showMyPlaces(nick, kod){
+  const box = $('myPlaces'); box.textContent = '';
+  try {
+    const by = rankings(await api.board(kod)), me = (kod + '|' + nick.toLowerCase());
+    const grid = document.createElement('div'); grid.className = 'places';
+    const head = document.createElement('div'); head.className = 'eyebrow'; head.style.gridColumn = '1 / -1'; head.textContent = 'Twoje miejsca' + (kod ? ' w grupie ' + kod : ''); grid.appendChild(head);
+    MODS.forEach(m => {
+      const a = by[m.id]; if (!a) return;
+      const i = a.findIndex(r => pkey(r) === me); if (i < 0) return;
+      const l = document.createElement('span'); l.textContent = m.name;
+      const v = document.createElement('b'); v.textContent = (i + 1) + ' / ' + a.length;
+      grid.append(l, v);
+    });
+    const ar = allround(by), j = ar.findIndex(p => pkey(p) === me);
+    if (j >= 0){ const l = document.createElement('span'); l.textContent = 'Wielobój'; const v = document.createElement('b'); v.textContent = (j + 1) + ' / ' + ar.length; grid.append(l, v); }
+    box.appendChild(grid);
+  } catch (e){ /* tablica chwilowo niedostępna – wysłanie i tak się udało */ }
+}
+
+/* ================= TABLICA: WYKRESY GRUPY =================
+   Różnice między warunkami u tej samej osoby nie zależą od opóźnienia telefonu,
+   więc to one są treścią wykresów. Szare linie i punkty = pojedyncze osoby, zielona = mediana grupy. */
+const MIN_N = 3;
+const esc = v => String(v).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function niceTicks(lo, hi, want){
+  const span = Math.max(1, hi - lo), raw = span / (want || 5);
+  const step = [5, 10, 20, 25, 50, 100, 200, 250, 500, 1000].find(x => x >= raw) || 1000;
+  const a = Math.floor(lo / step) * step, b = Math.ceil(hi / step) * step, t = [];
+  for (let v = a; v <= b + 1e-9; v += step) t.push(v);
+  return t;
+}
+// wykres liniowy: xs = położenia (np. log2 N), persons = tablice wartości (null = brak), med = mediana na każde x
+function lineChart(o){
+  const W = 800, H = 420, L = 78, R = 150, T = 44, B = 64, PAD = 34;
+  const vals = o.persons.flat().filter(v => v != null).concat(o.med.filter(v => v != null), o.zero ? [0] : []);
+  const ticks = niceTicks(Math.min(...vals), Math.max(...vals), 5), y0 = ticks[0], y1 = ticks[ticks.length - 1];
+  const xmin = Math.min(...o.xs), xmax = Math.max(...o.xs);
+  const X = x => L + PAD + (xmax === xmin ? 0.5 : (x - xmin) / (xmax - xmin)) * (W - L - R - 2 * PAD);
+  const Y = v => T + (1 - (v - y0) / (y1 - y0)) * (H - T - B);
+  let g = '';
+  ticks.forEach(t => { g += '<line class="grid" x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(t) + '" y2="' + Y(t) + '"/><text class="ax" x="' + (L - 10) + '" y="' + (Y(t) + 6) + '" text-anchor="end">' + t + '</text>'; });
+  if (o.zero) g += '<line class="zero" x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(0) + '" y2="' + Y(0) + '"/>' +
+    '<text class="ax" x="' + (W - R + 10) + '" y="' + (T + 6) + '">' + esc(o.zeroUp) + '</text><text class="ax" x="' + (W - R + 10) + '" y="' + (H - B) + '">' + esc(o.zeroDown) + '</text>';
+  o.xs.forEach((x, i) => { g += '<text class="ax" x="' + X(x) + '" y="' + (H - B + 34) + '" text-anchor="middle">' + esc(o.labels[i]) + '</text>'; });
+  g += '<text class="ax" x="' + (L - 10) + '" y="' + (T - 22) + '" text-anchor="end">ms</text>';
+  o.persons.forEach(pv => {
+    const pts = pv.map((v, i) => v == null ? null : [X(o.xs[i]), Y(v)]).filter(Boolean);
+    if (o.points) pts.forEach(([x, y]) => { g += '<circle class="pdot" cx="' + (x + (Math.random() - 0.5) * 26) + '" cy="' + y + '" r="5"/>'; });
+    else if (pts.length > 1) g += '<polyline class="pline" points="' + pts.map(p => p.join(',')).join(' ') + '"><title>jedna osoba</title></polyline>';
+  });
+  const mp = o.med.map((v, i) => v == null ? null : [X(o.xs[i]), Y(v), v]).filter(Boolean);
+  if (mp.length > 1) g += '<polyline class="mline" points="' + mp.map(p => p[0] + ',' + p[1]).join(' ') + '"/>';
+  mp.forEach(([x, y, v]) => { g += '<circle class="mdot" cx="' + x + '" cy="' + y + '" r="8"><title>mediana grupy: ' + v + ' ms</title></circle><text class="mlab" x="' + (x + 14) + '" y="' + (y - 12) + '">' + v + '</text>'; });
+  if (mp.length) { const [x, y] = mp[mp.length - 1]; g += '<text class="mkey" x="' + (x + 14) + '" y="' + (y + 28) + '">mediana grupy</text>'; }
+  return '<svg class="chart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(o.aria) + '">' + g + '</svg>';
+}
+// rozrzut jednej miary (np. koszt Stroopa): punkt na osobę, pionowa linia zera i mediany
+function stripChart(o){
+  const W = 800, H = 300, L = 40, R = 40, T = 40, B = 70;
+  const v = o.values, ticks = niceTicks(Math.min(0, ...v), Math.max(0, ...v), 6), x0 = ticks[0], x1 = ticks[ticks.length - 1];
+  const X = x => L + (x - x0) / (x1 - x0) * (W - L - R), mid = (T + H - B) / 2;
+  let g = '';
+  ticks.forEach(t => { g += '<line class="grid" x1="' + X(t) + '" x2="' + X(t) + '" y1="' + T + '" y2="' + (H - B) + '"/><text class="ax" x="' + X(t) + '" y="' + (H - B + 30) + '" text-anchor="middle">' + t + '</text>'; });
+  g += '<line class="zero" x1="' + X(0) + '" x2="' + X(0) + '" y1="' + (T - 10) + '" y2="' + (H - B) + '"/>';
+  g += '<text class="ax" x="' + (X(0) - 10) + '" y="' + (T - 14) + '" text-anchor="end">' + esc(o.left) + '</text><text class="ax" x="' + (X(0) + 10) + '" y="' + (T - 14) + '">' + esc(o.right) + '</text>';
+  g += '<text class="ax" x="' + (W - R) + '" y="' + (H - B + 58) + '" text-anchor="end">' + esc(o.unit) + '</text>';
+  v.forEach(x => { g += '<circle class="pdot" cx="' + X(x) + '" cy="' + (mid + (Math.random() - 0.5) * (H - T - B - 40)) + '" r="7"><title>' + x + ' ms</title></circle>'; });
+  const m = median(v);
+  g += '<line class="mline" x1="' + X(m) + '" x2="' + X(m) + '" y1="' + T + '" y2="' + (H - B) + '"/><text class="mlab" x="' + (X(m) + 10) + '" y="' + (H - B - 10) + '">mediana ' + m + '</text>';
+  return '<svg class="chart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(o.aria) + '">' + g + '</svg>';
+}
+const ms = v => v + ' ms';
+const early = v => Math.abs(v) + ' ms ' + (v > 0 ? 'za późno' : 'za wcześnie');
+const CHARTS = [
+  { id: 'g_hick', name: 'Prawo Hicka', build(P){
+      const ks = ['prosty', 'wybor2', 'wybor4'];
+      const persons = P.map(d => ks.map(k => d[k] && d[k].med != null ? d[k].med : null)).filter(a => a.filter(v => v != null).length >= 2);
+      if (persons.length < MIN_N) return null;
+      const med = ks.map((k, i) => { const x = persons.map(a => a[i]).filter(v => v != null); return x.length ? median(x) : null; });
+      const full = persons.filter(a => a.every(v => v != null)), up = full.filter(a => a[0] < a[1] && a[1] < a[2]).length;
+      return { text: 'Mediana grupy: prosty ' + ms(med[0]) + ', dwa pola ' + ms(med[1]) + ', cztery pola ' + ms(med[2]) + '. ' + (full.length ? 'Czas rósł z każdym polem u ' + up + ' z ' + full.length + ' osób.' : ''),
+        svg: lineChart({ xs: [0, 1, 2], labels: ['prosty (1)', '2 pola', '4 pola'], persons, med, aria: 'Czas reakcji przy 1, 2 i 4 polach' }) };
+  } },
+  { id: 'g_odl', name: 'Odliczanie', build(P){
+      const persons = P.filter(d => d.prosty && d.odliczanie).map(d => [d.prosty.med, d.odliczanie.med]);
+      if (persons.length < MIN_N) return null;
+      const med = [median(persons.map(a => a[0])), median(persons.map(a => a[1]))], faster = persons.filter(a => a[1] < a[0]).length;
+      return { text: 'Z odliczaniem szybciej zareagowało ' + faster + ' z ' + persons.length + ' osób. Mediana: losowy odstęp ' + ms(med[0]) + ', z odliczaniem ' + ms(med[1]) + '.',
+        svg: lineChart({ xs: [0, 1], labels: ['losowy odstęp (zad. 1)', 'z odliczaniem (zad. 4)'], persons, med, aria: 'Czas reakcji bez odliczania i z odliczaniem' }) };
+  } },
+  { id: 'g_stroop', name: 'Stroop', build(P){
+      const v = P.filter(d => d.stroop && d.stroop.cost != null).map(d => Math.round(d.stroop.cost));
+      if (v.length < MIN_N) return null;
+      const yes = v.filter(x => x > 0).length;
+      return { text: 'Niezgodne słowa spowolniły odpowiedź u ' + yes + ' z ' + v.length + ' osób. Mediana kosztu interferencji to ' + ms(median(v)) + '.',
+        svg: stripChart({ values: v, left: 'niezgodne szybciej', right: 'niezgodne wolniej', unit: 'koszt interferencji, ms', aria: 'Koszt interferencji Stroopa, punkt na osobę' }) };
+  } },
+  { id: 'g_szuk', name: 'Przeszukiwanie', build(P){
+      const ns = [6, 12, 24];
+      const persons = P.filter(d => d.szukanie && Array.isArray(d.szukanie.rec)).map(d => ns.map(n => { const x = d.szukanie.rec.filter(r => r.n === n).map(r => r.rt); return x.length ? median(x) : null; })).filter(a => a.filter(v => v != null).length >= 2);
+      if (persons.length < MIN_N) return null;
+      const med = ns.map((n, i) => { const x = persons.map(a => a[i]).filter(v => v != null); return x.length ? median(x) : null; });
+      const sl = P.filter(d => d.szukanie && d.szukanie.slope != null).map(d => d.szukanie.slope);
+      return { text: 'Mediana grupy: 6 figur ' + ms(med[0]) + ', 12 figur ' + ms(med[1]) + ', 24 figury ' + ms(med[2]) + '.' + (sl.length ? ' Każda kolejna figura dokłada około ' + ms(Math.round(median(sl))) + '.' : ''),
+        svg: lineChart({ xs: ns, labels: ['6 figur', '12 figur', '24 figury'], persons, med, aria: 'Czas szukania przy 6, 12 i 24 figurach' }) };
+  } },
+  { id: 'g_cel', name: 'Ruchomy cel', build(P){
+      const persons = P.filter(d => d.cel && Array.isArray(d.cel.rec)).map(d => [0, 1, 2].map(sp => { const x = d.cel.rec.filter(r => r.sp === sp).map(r => r.e); return x.length ? Math.round(mean(x)) : null; }));
+      if (persons.length < MIN_N) return null;
+      const med = [0, 1, 2].map(i => { const x = persons.map(a => a[i]).filter(v => v != null); return x.length ? median(x) : null; });
+      return { text: 'Mediana błędu stałego: przy wolnym ruchu ' + early(med[0]) + ', przy średnim ' + early(med[1]) + ', przy szybkim ' + early(med[2]) + '.',
+        svg: lineChart({ xs: [0, 1, 2], labels: ['wolno', 'średnio', 'szybko'], persons, med, points: true, zero: true, zeroUp: 'za późno', zeroDown: 'za wcześnie', aria: 'Błąd stały przy trzech prędkościach' }) };
+  } }
+];
+
+/* ================= TABLICA: WIDOK RZUTNIKOWY ================= */
+function initBoard(){
+  document.body.classList.add('projector');
+  showView('vBoard');
+  const kod = (Q.get('kod') || '').toUpperCase();
+  $('boardTitle').textContent = 'Wyniki grupy' + (kod ? ' ' + kod : '');
+  $('boardJoin').textContent = 'Link do testu: ' + location.origin + location.pathname + (kod ? '?kod=' + kod : '');
+  if (!ENDPOINT){ $('boardRule').textContent = 'Tablica nie jest skonfigurowana. Wpisz adres Apps Script w stałej ENDPOINT (instrukcja w apps_script/README.md).'; return; }
+  let by = {}, P = [], tabs = [], cur = 'g_hick';
+  function drawTabs(){
+    const box = $('boardTabs'); box.textContent = '';
+    const charts = CHARTS.map(c => c.id), ranks = ['all', ...MODS.map(m => m.id).filter(id => by[id])];
+    tabs = charts.concat(ranks);
+    if (!tabs.includes(cur)) cur = 'g_hick';
+    [['Wykresy grupy', charts], ['Ranking', ranks]].forEach(([label, ids]) => {
+      const row = document.createElement('div'); row.className = 'tabs';
+      const h = document.createElement('span'); h.className = 'tabLabel'; h.textContent = label; row.appendChild(h);
+      ids.forEach(id => {
+        const b = document.createElement('button'); b.className = 'tab';
+        b.textContent = id === 'all' ? 'Wielobój' : MOD[id] ? MOD[id].name : CHARTS.find(c => c.id === id).name;
+        b.setAttribute('aria-pressed', String(id === cur));
+        b.addEventListener('click', () => { cur = id; $('boardAuto').checked = false; draw(); });
+        row.appendChild(b);
+      });
+      box.appendChild(row);
+    });
+  }
+  function li(place, nick, kodTxt, score, small){
+    const e = document.createElement('li');
+    const a = document.createElement('span'); a.className = 'pl'; a.textContent = place + '.';
+    const b = document.createElement('span'); b.className = 'nk'; b.textContent = nick + (kod ? '' : (kodTxt ? ' (' + kodTxt + ')' : ''));
+    const c = document.createElement('span'); c.className = 'sc'; c.textContent = score;
+    if (small){ const s = document.createElement('small'); s.textContent = ' ' + small; c.appendChild(s); }
+    e.append(a, b, c); return e;
+  }
+  function draw(){
+    drawTabs();
+    const list = $('boardList'), chart = $('boardChart'); list.textContent = ''; chart.innerHTML = '';
+    const isChart = cur.startsWith('g_');
+    list.hidden = isChart; chart.hidden = !isChart;
+    if (isChart){
+      const c = CHARTS.find(x => x.id === cur), out = c.build(P);
+      if (!out){ $('boardRule').textContent = c.name + '. Wykres pojawi się, gdy wyniki wyśle co najmniej ' + MIN_N + ' osoby.'; return; }
+      $('boardRule').textContent = out.text;
+      chart.innerHTML = out.svg;   // SVG z samych liczb, bez pseudonimów
+    } else if (cur === 'all'){
+      const ar = allround(by);
+      $('boardRule').textContent = ar.length ? 'Liczy się suma miejsc ze wszystkich zadań, jak w wieloboju. Kto nie zrobił zadania, dostaje w nim miejsce za ostatnią osobą. Ranking porównuje też telefony, więc traktuj go jako zabawę.' : 'Jeszcze nikt nie wysłał wyniku.';
+      ar.slice(0, 10).forEach((p, i) => list.appendChild(li(i + 1, p.nick, p.kod, String(p.sum), 'pkt, ' + pl(p.cnt, 'zadanie', 'zadania', 'zadań'))));
+    } else {
+      $('boardRule').textContent = MOD[cur].name + '. Liczy się ' + MOD[cur].rule + '. Im mniej, tym lepiej.';
+      by[cur].slice(0, 10).forEach((r, i) => list.appendChild(li(i + 1, r.nick, r.kod, r.disp || String(r.score), r.disp && Math.round(r.score) !== parseInt(r.disp.replace(/\D+/, ''), 10) ? '(z karą ' + Math.round(r.score) + ')' : '')));
+    }
+  }
+  async function refresh(){
+    try {
+      const [rows, grp] = await Promise.all([api.board(kod), api.group(kod)]);
+      by = rankings(rows);
+      const m = {}; grp.forEach(r => { if (MOD[r.mod] && r.det) (m[r.p] = m[r.p] || {})[r.mod] = r.det; }); P = Object.values(m);
+      $('boardStamp').textContent = 'Zaktualizowano o ' + new Date().toLocaleTimeString('pl-PL') + ', osób: ' + P.length;
+    } catch (e){ $('boardStamp').textContent = 'Brak połączenia. Próbuję ponownie…'; }
+    draw();
+  }
+  refresh(); setInterval(refresh, 15000);
+  setInterval(() => { if ($('boardAuto').checked && tabs.length > 1){ cur = tabs[(tabs.indexOf(cur) + 1) % tabs.length]; draw(); } }, 12000);
+}
+
+// częstotliwość odświeżania ekranu (mediana odstępów między klatkami)
+function measureHz(){
+  const ts = [];
+  function f(t){
+    ts.push(t);
+    if (ts.length < 40) return requestAnimationFrame(f);
+    const d = []; for (let i = 1; i < ts.length; i++) d.push(ts[i] - ts[i - 1]);
+    const m = median(d);
+    if (m > 4 && m < 40){
+      const raw = 1000 / m, STD = [60, 75, 90, 100, 120, 144, 165, 240];
+      const near = STD.reduce((x, y) => Math.abs(y - raw) < Math.abs(x - raw) ? y : x);
+      const hz = Math.abs(near - raw) / near < 0.06 ? near : Math.round(raw), ms = Math.round(1000 / hz);
+      $('hzLine').textContent = hz === 60
+        ? 'Twój ekran ma standardowe 60 Hz, czyli pokazuje nową klatkę co 17 ms.'
+        : 'Standardowy ekran ma 60 Hz, czyli pokazuje nową klatkę co 17 ms. Twój ma około ' + hz + ' Hz, więc nowa klatka pojawia się co ' + ms + ' ms.';
+      $('hzLine').hidden = false;
+    }
+  }
+  requestAnimationFrame(f);
+}
+
+/* ================= START ================= */
+if (Q.has('tablica')) initBoard();
+else { renderHome(); showView('vHome'); measureHz(); }
+})();
+</script>
+</body>
+</html>
