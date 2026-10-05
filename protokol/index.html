@@ -182,6 +182,10 @@ input:focus,select:focus{border-color:var(--brand)}
 .chart .mdot{fill:var(--medline);stroke:var(--panel);stroke-width:2}
 .chart .mlab{fill:var(--ink);font-size:21px;font-weight:900;font-family:Lato,"Segoe UI",Arial,sans-serif}
 .chart .mkey{fill:var(--ink);font-size:16px;font-weight:700;font-family:Lato,"Segoe UI",Arial,sans-serif}
+.chart .sline{fill:none;stroke-width:3;stroke-dasharray:10 7;stroke-linecap:round}
+.chart .sline.t{stroke:var(--yellow)}
+.chart .sline.n{stroke:var(--ink)}
+.chart .skey{fill:var(--ink);font-size:15px;font-weight:700;font-family:Lato,"Segoe UI",Arial,sans-serif}
 body.projector .tabLabel{font-size:16px}
 .tab{border:1.5px solid var(--line);background:transparent;color:var(--ink);border-radius:8px;padding:6px 12px;font-weight:700;font-size:14px}
 .tab[aria-pressed="true"]{background:var(--brand);color:var(--on-brand);border-color:var(--brand)}
@@ -278,10 +282,10 @@ body.projector .boardRule{font-size:22px}
   </div>
   <div class="card" id="sendCard">
     <div class="eyebrow">Tablica wyników dla chętnych</div>
-    <p class="sub" style="margin:0">Wpisz pseudonim, a nie imię i nazwisko. PIN grupy podaje prowadzący, on też decyduje, do której grupy trafią wyniki. Wysyłamy tylko pseudonim, płeć (jeśli ją podasz) i wyniki.</p>
+    <p class="sub" style="margin:0">Wpisz pseudonim, a nie imię i nazwisko. PIN grupy podaje prowadzący, on też decyduje, do której grupy trafią wyniki. Wysyłamy tylko pseudonim, odpowiedź o sporcie (jeśli ją podasz) i wyniki.</p>
     <div class="form">
       <label class="full">Pseudonim<input id="fNick" maxlength="16" autocomplete="off" placeholder="np. Kangur7"></label>
-      <label>Płeć (opcjonalnie)<select id="fPlec"><option value="">nie podaję</option><option value="K">K</option><option value="M">M</option></select></label>
+      <label class="full">Trenujesz sport, w którym reagujesz na piłkę lub rywala?<select id="fSport"><option value="">nie podaję</option><option value="T">tak</option><option value="N">nie</option></select></label>
       <label>PIN grupy<input id="fPin" maxlength="12" inputmode="numeric" autocomplete="off" placeholder="od prowadzącego"></label>
     </div>
     <div class="row"><button class="primary" id="sendBtn">Wyślij na tablicę</button><a id="boardLink" href="#" target="_blank" rel="noopener">pełna tablica</a></div>
@@ -341,7 +345,7 @@ const errTxt = n => n ? pl(n, 'błąd', 'błędy', 'błędów') : 'bez błędów
 const slope = (xs, ys) => { const mx = mean(xs), my = mean(ys); let num = 0, den = 0; xs.forEach((x, i) => { num += (x - mx) * (ys[i] - my); den += (x - mx) ** 2; }); return den ? num / den : 0; };
 
 /* ================= STAN ================= */
-let S = { res: {}, best: {}, nick: '', kod: '', plec: '', pin: '' };
+let S = { res: {}, best: {}, nick: '', kod: '', sport: '', pin: '' };
 try { Object.assign(S, JSON.parse(localStorage.getItem(STORE) || '{}')); } catch (e) {}
 function save(){ try { localStorage.setItem(STORE, JSON.stringify(S)); } catch (e) {} }
 if (Q.get('kod')) S.kod = Q.get('kod').toUpperCase().slice(0, 8);
@@ -800,7 +804,7 @@ function renderSummary(){
   $('sumCode').textContent = summaryCode() || '– (zrób przynajmniej jedno zadanie)';
   $('copyBtn').textContent = 'Kopiuj wynik';
   $('sendCard').hidden = !ENDPOINT;
-  $('fNick').value = S.nick || ''; $('fPlec').value = S.plec || ''; $('fPin').value = S.pin || '';
+  $('fNick').value = S.nick || ''; $('fSport').value = S.sport || ''; $('fPin').value = S.pin || '';
   updateBoardLink();
   $('sendMsg').textContent = '';
 }
@@ -864,17 +868,17 @@ const SEND_ERR = {
 $('sendBtn').addEventListener('click', async () => {
   const nick = $('fNick').value.replace(/[<>"'`\\=+@]/g, '').trim().slice(0, 16);
   const kod = S.kod || '';   // grupę i tak ustala serwer na podstawie PIN-u
-  const plec = $('fPlec').value;
+  const sport = $('fSport').value;
   const pin = $('fPin').value.trim().slice(0, 12);
   const out = $('sendMsg');
   if (!nick){ out.className = 'err'; out.textContent = 'Wpisz pseudonim.'; return; }
   const wyniki = MODS.filter(m => S.res[m.id]).map(m => ({ mod: m.id, score: S.res[m.id].score, disp: S.res[m.id].disp, det: S.res[m.id].det }));
   if (!wyniki.length){ out.className = 'err'; out.textContent = 'Najpierw zrób przynajmniej jedno zadanie.'; return; }
   if (!pin){ out.className = 'err'; out.textContent = 'Wpisz PIN od prowadzącego. Bez niego wyniki zostają tylko na Twoim telefonie.'; return; }
-  S.nick = nick; S.plec = plec; S.pin = pin; save();
+  S.nick = nick; S.sport = sport; S.pin = pin; save();
   $('sendBtn').disabled = true; out.className = ''; out.textContent = 'Wysyłam…';
   try {
-    const j = await api.send({ nick, kod, plec, pin, wyniki, ua: navigator.userAgent.slice(0, 80) });
+    const j = await api.send({ nick, kod, sport, pin, wyniki, ua: navigator.userAgent.slice(0, 80) });
     if (j.kod){ S.kod = j.kod; save(); updateBoardLink(); }
     out.className = 'ok'; out.textContent = 'Wysłano wyniki: ' + j.n + (S.kod ? ', grupa ' + S.kod : '') + '.';
     showMyPlaces(nick, S.kod || '');
@@ -915,7 +919,7 @@ function niceTicks(lo, hi, want){
 // wykres liniowy: xs = położenia (np. log2 N), persons = tablice wartości (null = brak), med = mediana na każde x
 function lineChart(o){
   const W = 800, H = 420, L = 78, R = 150, T = 44, B = 64, PAD = 34;
-  const vals = o.persons.flat().filter(v => v != null).concat(o.med.filter(v => v != null), o.zero ? [0] : []);
+  const vals = o.persons.flat().filter(v => v != null).concat(o.med.filter(v => v != null), (o.extra || []).flatMap(e => e.med.filter(v => v != null)), o.zero ? [0] : []);
   const ticks = niceTicks(Math.min(...vals), Math.max(...vals), 5), y0 = ticks[0], y1 = ticks[ticks.length - 1];
   const xmin = Math.min(...o.xs), xmax = Math.max(...o.xs);
   const X = x => L + PAD + (xmax === xmin ? 0.5 : (x - xmin) / (xmax - xmin)) * (W - L - R - 2 * PAD);
@@ -930,6 +934,11 @@ function lineChart(o){
     const pts = pv.map((v, i) => v == null ? null : [X(o.xs[i]), Y(v)]).filter(Boolean);
     if (o.points) pts.forEach(([x, y]) => { g += '<circle class="pdot" cx="' + (x + (Math.random() - 0.5) * 26) + '" cy="' + y + '" r="5"/>'; });
     else if (pts.length > 1) g += '<polyline class="pline" points="' + pts.map(p => p.join(',')).join(' ') + '"><title>jedna osoba</title></polyline>';
+  });
+  (o.extra || []).forEach(e => {  // mediany podgrup: linia przerywana, opis na prawym marginesie
+    const sp = e.med.map((v, i) => v == null ? null : [X(o.xs[i]), Y(v)]).filter(Boolean);
+    if (sp.length > 1) g += '<polyline class="sline ' + e.cls + '" points="' + sp.map(q => q.join(',')).join(' ') + '"><title>' + esc(e.label) + '</title></polyline>';
+    if (sp.length) g += '<text class="skey" x="' + (W - R + 10) + '" y="' + (sp[sp.length - 1][1] + 6) + '">' + esc(e.label) + '</text>';
   });
   const mp = o.med.map((v, i) => v == null ? null : [X(o.xs[i]), Y(v), v]).filter(Boolean);
   if (mp.length > 1) g += '<polyline class="mline" points="' + mp.map(p => p[0] + ',' + p[1]).join(' ') + '"/>';
@@ -957,12 +966,21 @@ const early = v => Math.abs(v) + ' ms ' + (v > 0 ? 'za późno' : 'za wcześnie'
 const CHARTS = [
   { id: 'g_hick', name: 'Prawo Hicka', build(P){
       const ks = ['prosty', 'wybor2', 'wybor4'];
-      const persons = P.map(d => ks.map(k => d[k] && d[k].med != null ? d[k].med : null)).filter(a => a.filter(v => v != null).length >= 2);
+      const ok = d => ks.filter(k => d[k] && d[k].med != null).length >= 2;
+      const row = d => ks.map(k => d[k] && d[k].med != null ? d[k].med : null);
+      const persons = P.filter(ok).map(row);
       if (persons.length < MIN_N) return null;
-      const med = ks.map((k, i) => { const x = persons.map(a => a[i]).filter(v => v != null); return x.length ? median(x) : null; });
+      const medOf = ps => ks.map((k, i) => { const x = ps.map(a => a[i]).filter(v => v != null); return x.length ? median(x) : null; });
+      const med = medOf(persons);
       const full = persons.filter(a => a.every(v => v != null)), up = full.filter(a => a[0] < a[1] && a[1] < a[2]).length;
-      return { text: 'Mediana grupy: prosty ' + ms(med[0]) + ', dwa pola ' + ms(med[1]) + ', cztery pola ' + ms(med[2]) + '. ' + (full.length ? 'Czas rósł z każdym polem u ' + up + ' z ' + full.length + ' osób.' : ''),
-        svg: lineChart({ xs: [0, 1, 2], labels: ['prosty (1)', '2 pola', '4 pola'], persons, med, aria: 'Czas reakcji przy 1, 2 i 4 polach' }) };
+      // podgrupy: sport z reakcją na bodziec (T) vs bez (N); pokazujemy, gdy każda ma co najmniej MIN_N osób
+      const pt = P.filter(d => ok(d) && d._sport === 'T').map(row), pn = P.filter(d => ok(d) && d._sport === 'N').map(row);
+      const split = pt.length >= MIN_N && pn.length >= MIN_N;
+      const mt = split ? medOf(pt) : null, mn = split ? medOf(pn) : null;
+      const extra = split ? [{ med: mt, cls: 't', label: 'sport z reakcją (' + pt.length + ')' }, { med: mn, cls: 'n', label: 'bez (' + pn.length + ')' }] : [];
+      return { text: 'Mediana grupy: prosty ' + ms(med[0]) + ', dwa pola ' + ms(med[1]) + ', cztery pola ' + ms(med[2]) + '. ' + (full.length ? 'Czas rósł z każdym polem u ' + up + ' z ' + full.length + ' osób.' : '') +
+          (split ? ' Sport z reakcją: prosty ' + ms(mt[0]) + ', cztery pola ' + ms(mt[2]) + '; bez: prosty ' + ms(mn[0]) + ', cztery pola ' + ms(mn[2]) + '.' : ''),
+        svg: lineChart({ xs: [0, 1, 2], labels: ['prosty (1)', '2 pola', '4 pola'], persons, med, extra, aria: 'Czas reakcji przy 1, 2 i 4 polach' }) };
   } },
   { id: 'g_odl', name: 'Odliczanie', build(P){
       const persons = P.filter(d => d.prosty && d.odliczanie).map(d => [d.prosty.med, d.odliczanie.med]);
@@ -1054,7 +1072,7 @@ function initBoard(){
     try {
       const [rows, grp] = await Promise.all([api.board(kod), api.group(kod)]);
       by = rankings(rows);
-      const m = {}; grp.forEach(r => { if (MOD[r.mod] && r.det) (m[r.p] = m[r.p] || {})[r.mod] = r.det; }); P = Object.values(m);
+      const m = {}; grp.forEach(r => { if (MOD[r.mod] && r.det){ const o = (m[r.p] = m[r.p] || {}); o[r.mod] = r.det; if (r.s) o._sport = r.s; } }); P = Object.values(m);
       $('boardStamp').textContent = 'Zaktualizowano o ' + new Date().toLocaleTimeString('pl-PL') + ', osób: ' + P.length;
     } catch (e){ $('boardStamp').textContent = 'Brak połączenia. Próbuję ponownie…'; }
     draw();

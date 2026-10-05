@@ -3,9 +3,11 @@
  * Arkusz Google → Rozszerzenia → Apps Script → wklej ten plik → Wdróż jako aplikację internetową.
  * Instrukcja: README.md obok.
  *
- * POST (body: JSON jako text/plain): {nick, kod, plec, ua, wyniki:[{mod, score, disp, det}]} → dopisuje wiersze.
+ * POST (body: JSON jako text/plain): {nick, kod, sport, ua, wyniki:[{mod, score, disp, det}]} → dopisuje wiersze.
+ *   sport: 'T' = trenuje sport z reakcją na bodziec (piłka, rywal), 'N' = nie, '' = nie podał.
  * GET ?kod=WT → {ok, rows:[{kod, nick, mod, score, disp}]}: najlepszy wynik każdej osoby w każdym zadaniu.
- * GET ?tryb=grupa&kod=WT → {ok, rows:[{p, mod, det}]}: ostatnie podejście każdej osoby do wykresów, bez pseudonimów.
+ * GET ?tryb=grupa&kod=WT → {ok, rows:[{p, mod, det, s}]}: ostatnie podejście każdej osoby do wykresów, bez pseudonimów
+ *   (s = sport T/N/'').
  * Moderacja: usuń wiersz w arkuszu „wyniki”.
  *
  * Ochrona zapisu: wynik przyjmowany tylko z PIN-em, a PIN wyznacza grupę (kod z linku jest ignorowany).
@@ -37,7 +39,7 @@ function sheet_() {
   let sh = ss.getSheetByName(SHEET);
   if (!sh) {
     sh = ss.insertSheet(SHEET);
-    sh.appendRow(['czas', 'kod', 'nick', 'plec', 'modul', 'wynik', 'opis', 'szczegoly', 'urzadzenie', 'opis_pinu']);
+    sh.appendRow(['czas', 'kod', 'nick', 'sport', 'modul', 'wynik', 'opis', 'szczegoly', 'urzadzenie', 'opis_pinu']);
     sh.setFrozenRows(1);
   }
   return sh;
@@ -118,7 +120,7 @@ function doPost(e) {
     const pin = String(d.pin == null ? '' : d.pin).trim();
     const grupa = Object.prototype.hasOwnProperty.call(pins, pin) ? pins[pin] : null;
     const kod = grupa ? grupa.kod : '';
-    const plec = (d.plec === 'K' || d.plec === 'M') ? d.plec : '';
+    const sport = (d.sport === 'T' || d.sport === 'N') ? d.sport : '';
     if (!nick) return json_({ ok: false, error: 'brak pseudonimu' });
     const now = new Date();
     const rows = [];
@@ -126,7 +128,7 @@ function doPost(e) {
       const lim = MODS[w && w.mod];
       const s = Number(w && w.score);
       if (!lim || !isFinite(s) || s < lim[0] || s > lim[1]) return;
-      rows.push([now, kod, nick, plec, w.mod, Math.round(s), clean_(w.disp, 40), (function () { const j = JSON.stringify(det_(w.det || {}, 0) || {}); return j.length < 3000 ? j : '{}'; })(), clean_(d.ua, 80)]);
+      rows.push([now, kod, nick, sport, w.mod, Math.round(s), clean_(w.disp, 40), (function () { const j = JSON.stringify(det_(w.det || {}, 0) || {}); return j.length < 3000 ? j : '{}'; })(), clean_(d.ua, 80)]);
     });
     if (!rows.length) return json_({ ok: false, error: 'brak poprawnych wyników' });
     const cache = CacheService.getScriptCache();
@@ -192,7 +194,7 @@ function group_(kod, cache) {
     const t = new Date(r[0]).getTime(), k = String(r[1] || ''), nick = String(r[2] || '').toLowerCase(), mod = String(r[4] || '');
     if (!nick || !MODS[mod] || (kod && k !== kod) || t < since) return;
     const who = k + '|' + nick, id = who + '|' + mod;
-    if (!last[id] || t >= last[id].t) last[id] = { t: t, who: who, mod: mod, det: r[7] };
+    if (!last[id] || t >= last[id].t) last[id] = { t: t, who: who, mod: mod, det: r[7], s: String(r[3] || '') };
   });
   const rows = [];
   Object.keys(last).forEach(function (id) {
@@ -200,7 +202,7 @@ function group_(kod, cache) {
     let det = null;
     try { det = JSON.parse(x.det); } catch (err) { return; }
     if (!(x.who in ids)) ids[x.who] = Object.keys(ids).length;
-    rows.push({ p: ids[x.who], mod: x.mod, det: det });
+    rows.push({ p: ids[x.who], mod: x.mod, det: det, s: (x.s === 'T' || x.s === 'N') ? x.s : '' });
   });
   const out = JSON.stringify({ ok: true, rows: rows });
   if (out.length < 90000) cache.put(key, out, CACHE_S);

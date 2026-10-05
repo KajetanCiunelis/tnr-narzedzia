@@ -35,7 +35,7 @@ Po edycji `Code.gs`: **Wdróż → Zarządzaj wdrożeniami → ołówek → Wers
 - Strona wstawia pseudonimy jako zwykły tekst, więc nie da się nimi niczego „podłożyć” na tablicy.
 
 ## Co jest w arkuszu
-`czas | kod | nick | plec | modul | wynik | opis | szczegoly | urzadzenie | opis_pinu`. Wszystkie grupy są w jednym arkuszu (kolumna `kod`), więc zestawienie całego rocznika zrobisz po fakcie filtrem albo tabelą przestawną. Każde wysłanie dopisuje osobny wiersz dla każdego zadania. Tablica pokazuje najlepszy wynik osoby z ostatnich 30 dni (`DAYS` w skrypcie). `szczegoly` to JSON z pojedynczymi próbami, np. do analizy prawa Hicka w raporcie. `wynik` to wynik rankingowy w ms, z karą 100 ms za każdy błąd; czysty wynik jest w `opis`.
+`czas | kod | nick | sport | modul | wynik | opis | szczegoly | urzadzenie | opis_pinu`. Kolumna `sport`: T = trenuje sport z reakcją na bodziec, N = nie, puste = nie podał. Wszystkie grupy są w jednym arkuszu (kolumna `kod`), więc zestawienie całego rocznika zrobisz po fakcie filtrem albo tabelą przestawną. Każde wysłanie dopisuje osobny wiersz dla każdego zadania. Tablica pokazuje najlepszy wynik osoby z ostatnich 30 dni (`DAYS` w skrypcie). `szczegoly` to JSON z pojedynczymi próbami, np. do analizy prawa Hicka w raporcie. `wynik` to wynik rankingowy w ms, z karą 100 ms za każdy błąd; czysty wynik jest w `opis`.
 
 ## Gdyby kiedyś Supabase
 W `index.html` cała komunikacja siedzi w obiekcie `api` (`send`, `board`). Wystarczy tabela `wyniki` z RLS (anon: tylko INSERT, SELECT z widoku z najlepszymi wynikami) i wymiana tych dwóch funkcji. Uwaga: darmowy projekt Supabase usypia się po tygodniu bez ruchu.
