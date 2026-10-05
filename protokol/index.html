@@ -210,7 +210,7 @@ body.projector .boardMeta,body.projector .band .sub{font-size:17px}
 .boardRule{color:var(--muted);font-size:15px}
 body.projector .boardRule{font-size:22px}
 @media (max-width:380px){.form{grid-template-columns:1fr}}
-@media (prefers-reduced-motion: no-preference){.arena{transition:background-color .06s}}
+/* bez przejść koloru na polu testu: sygnał musi pojawić się w całości w jednej klatce, od niej liczymy czas */
 </style>
 </head>
 <body>
@@ -233,6 +233,7 @@ body.projector .boardRule{font-size:22px}
       <p><b>Dotyk.</b> Ekran dotykowy sprawdza położenie palca w krótkich odstępach, a system potrzebuje chwili na obróbkę. To zwykle 20–60 ms.</p>
       <p id="hzLine" hidden></p>
       <p>Na tym samym telefonie oba opóźnienia są prawie stałe, dlatego różnice między zadaniami są wiarygodne.</p>
+      <p><b>Jak je zmniejszyć:</b> otwórz test w zwykłej przeglądarce (Chrome, Safari), a nie w podglądzie wewnątrz innej aplikacji; wyłącz tryb oszczędzania baterii, bo często obniża odświeżanie ekranu do 60 Hz; zamknij inne aplikacje.</p>
     </details>
   </div>
   <div class="row">
