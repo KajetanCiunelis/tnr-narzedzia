@@ -20,7 +20,8 @@ Strona `speedtest/` leży na GitHub Pages, który serwuje tylko statyczne pliki.
 ## Na zajęciach
 - QR dla studentów: link z kolumny „link dla studentów” w arkuszu `piny` (`…/speedtest/?kod=G1&pin=227758`). Kod grupy i PIN wpiszą się same.
 - Inni prowadzący: sam link bez PIN-u wystarczy do przeprowadzenia testu. Jeśli mają mieć tablicę, daj im wiersz ich grupy z arkusza `piny`.
-- Nowe PIN-y (np. na następny semestr): uruchom ponownie `utworzPiny`. Stare przestaną działać od razu.
+- Nowa grupa (np. inny prowadzący) bez ruszania istniejących PIN-ów: dopisz ją do `GRUPY` i uruchom **`dodajPiny`**. Nowy wiersz pojawi się w arkuszu `piny`. Tak dodano 5.10 grupy `MO` (Monika) i `AG` (Agnieszka).
+- Nowe PIN-y (np. na następny semestr): uruchom ponownie `utworzPiny`. Stare przestaną działać od razu. **Uwaga:** dotyczy wszystkich grup naraz.
 - Na rzutnik: `https://tnr.ciunelis.com/speedtest/?tablica&kod=WT`. Najpierw **wykresy grupy**: prawo Hicka, odliczanie a losowy odstęp, koszt Stroopa, przeszukiwanie i błąd stały w ruchomym celu. Szare linie to pojedyncze osoby (bez pseudonimów), zielona linia to mediana. Wykres pojawia się od 3 osób. Pod nimi **ranking** (wielobój i każde zadanie) dla zabawy. Strona odświeża się co 15 s. Przełączanie zakładek co 12 s jest domyślnie włączone; kliknięcie zakładki je wyłącza.
 - Brak czasu: dopisz `&proby=3` do linku studentów (3 próby na zadanie, ok. 3 min).
 - Niestosowny pseudonim: usuń wiersz w arkuszu `wyniki`. Tablica zaktualizuje się w ciągu kilkunastu sekund.
