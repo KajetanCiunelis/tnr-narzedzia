@@ -30,7 +30,7 @@ const LIMIT_ZLY_PIN = 30;   // błędnych PIN-ów na 10 min, potem blokada zapis
 // dopuszczalny zakres wyniku rankingowego (ms, z karami) dla każdego zadania
 const MODS = {
   prosty: [100, 3000], wybor2: [100, 3500], wybor4: [100, 4000],
-  odliczanie: [100, 3500], rytm: [0, 2500], cel: [0, 2500],
+  odliczanie: [0, 3500], rytm: [0, 2500], cel: [0, 2500],
   gonogo: [100, 5000], ksztalt: [100, 5000], szukanie: [100, 12000], stroop: [100, 6000]
 };
 

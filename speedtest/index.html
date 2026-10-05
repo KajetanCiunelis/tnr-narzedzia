@@ -16,7 +16,7 @@
   --brand:#006341; --brand-dk:#004a30; --accent:#006341; --on-brand:#ffffff; --brand-sub:#cfe3d8;
   --yellow:#fbae40; --on-yellow:#004a30;
   --wait:#004a30; --err:#b3261e; --err-bg:#fcebea;
-  --shape:#1f2933; --finish:#1f2933; --stroop:#0f1a15;
+  --shape:#006341; --finish:#1f2933; --stroop:#0f1a15;
   --person:#a3b3ab; --medline:#006341;
 }
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
@@ -24,7 +24,7 @@
   --bg:#0d1613; --panel:#14211c; --tile:#1c2d26; --line:#293b33;
   --ink:#e8f1ec; --muted:#a3b6ac; --accent:#7ad3a6;
   --wait:#003a26; --err:#e5534b; --err-bg:#3a1b19;
-  --shape:#e8f1ec; --finish:#e8f1ec; --stroop:#0a120f;
+  --shape:#46b583; --finish:#e8f1ec; --stroop:#0a120f;
   --person:#4f625a; --medline:#46b583;
 }}
 :root[data-theme="dark"]{
@@ -32,7 +32,7 @@
   --bg:#0d1613; --panel:#14211c; --tile:#1c2d26; --line:#293b33;
   --ink:#e8f1ec; --muted:#a3b6ac; --accent:#7ad3a6;
   --wait:#003a26; --err:#e5534b; --err-bg:#3a1b19;
-  --shape:#e8f1ec; --finish:#e8f1ec; --stroop:#0a120f;
+  --shape:#46b583; --finish:#e8f1ec; --stroop:#0a120f;
   --person:#4f625a; --medline:#46b583;
 }
 *{box-sizing:border-box}
@@ -100,7 +100,7 @@ input[type=checkbox]{accent-color:var(--brand)}
 .msg{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:16px;gap:6px}
 .msg .big{font-size:32px;font-weight:900;line-height:1.1;text-wrap:balance}
 .msg .hint{font-size:15px;opacity:.85;max-width:34ch}
-.msg .msNum{font-size:60px;font-weight:900;font-variant-numeric:tabular-nums;line-height:1}
+.msg .msNum{font-size:60px;font-weight:900;font-variant-numeric:tabular-nums;line-height:1;color:var(--accent)}
 .msg .cta{margin-top:14px;font-weight:900;background:var(--brand);color:var(--on-brand);border-radius:8px;padding:10px 20px}
 .msg .lbl{font-size:14px;font-weight:700;color:var(--muted)}
 .ok-ico{width:64px;height:64px;stroke:var(--accent);fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
@@ -471,14 +471,18 @@ function countdown(mode){
         A('', '');
       }
       if (mode === 'sygnal'){
-        if (!broke){ await sleepUntil(base + 3 * IV - 8); if (hit) broke = true; }
-        if (broke){ err++; ctx.bad('falstart'); await flash('Falstart', 'Dotknięcie przed sygnałem.'); continue; }
-        const goAt = await showAt(() => A('go', msg('TERAZ!')));
+        // bez falstartów: o to tu chodzi, że moment „0” da się przewidzieć. Dotknięcie po zniknięciu „1”,
+        // a przed sygnałem, liczy się od planowanego sygnału (wynik ujemny); „za wcześnie” tylko w trakcie 3–2–1
+        if (broke){ err++; ctx.bad('za wcześnie'); await flash('Za wcześnie', 'Dotknięcie w trakcie odliczania. Celuj w moment „0”.'); continue; }
+        const sigT = base + 3 * IV;
+        await sleepUntil(sigT - 8);
+        const goAt = hit ? sigT : await showAt(() => A('go', msg('TERAZ!')));
         const r = await p;
         if (!r){ err++; ctx.bad('brak'); await flash('Za wolno', 'Powtarzamy próbę.'); continue; }
         const rt = Math.round(r.t - goAt);
-        if (badRT(rt)){ err++; ctx.bad(rt < 0 ? 'falstart' : rt + ' ms!'); await flash('Falstart', rt < 0 ? 'Dotknięcie przed sygnałem.' : rt + ' ms to za szybko na reakcję. W lekkoatletyce taki start też jest falstartem.', '', 1300); continue; }
-        out.push(rt); ctx.ok(rt + ' ms'); A('', msHTML(rt)); await sleep(500);
+        out.push(rt); ctx.ok(sgn(rt) + ' ms');
+        A('', msHTML(sgn(rt), rt < 0 ? 'ms przed sygnałem, czyli przewidywanie' : rt < 100 ? 'ms, szybciej niż reakcja, czyli przewidywanie' : 'ms po sygnale'));
+        await sleep(700);
       } else {
         if (broke && st.length < 3){ err++; ctx.bad('za wcześnie'); await flash('Za wcześnie', 'Dotknij dopiero tam, gdzie wypadłoby „0”.'); continue; }
         const expected = st[2] + (st[2] - st[0]) / 2;
@@ -494,9 +498,12 @@ function countdown(mode){
     }
     if (!out.length) return null;
     if (mode === 'sygnal'){
-      const med = median(out);
-      return { score: med + 100 * err, main: med + ' ms', disp: med + ' ms', sub: 'Mediana z ' + out.length + ' prób, ' + errTxt(err) + ' (falstarty też się liczą).',
-        code: 'odliczanie ' + med, det: { med, rts: out, err } };
+      // ranking: odległość od sygnału w obie strony (inaczej wygrywałby ten, kto klika najwcześniej)
+      const med = median(out), dist = median(out.map(Math.abs)), ant = out.filter(v => v < 100).length;
+      const ms_ = v => (v < 0 ? '−' + Math.abs(v) : v) + ' ms';
+      return { score: dist + 100 * err, main: ms_(med), disp: ms_(med),
+        sub: 'Mediana z ' + out.length + ' prób, ' + errTxt(err) + '. Przewidywanie (przed sygnałem albo szybciej niż 100 ms): ' + ant + ' z ' + out.length + '.',
+        code: 'odliczanie ' + med, det: { med, dist, rts: out, err, ant } };
     }
     const ae = Math.round(mean(out.map(Math.abs))), ce = Math.round(mean(out)), ve = Math.round(sd(out));
     return { score: ae + 100 * err, main: 'AE ' + ae + ' ms', disp: 'AE ' + ae + ' ms',
@@ -669,9 +676,9 @@ const MODS = [
   { id: 'wybor4', b: 'A', name: 'Wybór 4', ds: 'cztery pola', run: rtChoice(4, 'wybór 4'), rule: 'mediana plus 100 ms za każdy błąd',
     instr: 'Cztery pola. Dotknij to, które zapali się na żółto.',
     info: '<p><b>Prawo Hicka</b> mówi, że czas reakcji z wyborem rośnie liniowo z logarytmem liczby możliwości: RT = a + b·log₂N. Przejście z jednego pola na dwa i z dwóch na cztery to za każdym razem jeden bit informacji, więc oba przyrosty powinny być podobne.</p><p>W sporcie im więcej możliwych zagrań ma przeciwnik, tym dłużej trwa decyzja. Dlatego zawodnik stara się zawęzić możliwości, czytając wskazówki, a atakujący stara się je mnożyć.</p>' },
-  { id: 'odliczanie', b: 'B', name: 'Sygnał po odliczaniu', ds: 'odliczanie i sygnał na „0”', run: countdown('sygnal'), rule: 'mediana plus 100 ms za każdy falstart lub błąd',
-    instr: 'Zobaczysz odliczanie 3, 2, 1 w stałym tempie, a potem żółty sygnał dokładnie w miejscu „0”. Reaguj na sygnał. Reakcja szybsza niż 100 ms to falstart.',
-    info: '<p>To przygotowanie czasowe. Gdy wiadomo, kiedy przyjdzie sygnał, reakcja jest krótsza niż przy losowym odstępie, bo część pracy mózg wykonuje wcześniej. Porównaj wynik z zadaniem 1.</p><p>Granica 100 ms pochodzi z przepisów lekkoatletycznych. Szybszą „reakcję” uznaje się za zgadywanie, czyli falstart. Dlatego starter za każdym razem zmienia odstęp między komendą „gotowi” a strzałem.</p>' },
+  { id: 'odliczanie', b: 'B', name: 'Sygnał po odliczaniu', ds: 'odliczanie i sygnał na „0”', run: countdown('sygnal'), rule: 'mediana odległości od sygnału (przed albo po) plus 100 ms za dotknięcie w trakcie odliczania lub brak reakcji',
+    instr: 'Zobaczysz odliczanie 3, 2, 1 w stałym tempie, a potem żółty sygnał dokładnie w miejscu „0”. Dotknij jak najbliżej sygnału. Możesz przewidzieć „0” i dotknąć razem z nim, tu nie ma falstartów. Za wcześnie jest tylko dotknięcie w trakcie odliczania.',
+    info: '<p>To przygotowanie czasowe. Gdy wiadomo, kiedy przyjdzie sygnał, reakcja jest krótsza niż przy losowym odstępie, bo część pracy mózg wykonuje wcześniej. Porównaj wynik z zadaniem 1.</p><p>Tu nie ma falstartów: wynik poniżej 100 ms albo dotknięcie tuż przed sygnałem to właśnie przewidywanie, o które chodzi. W lekkoatletyce taka „reakcja” byłaby falstartem (system startowy zgłasza reakcję szybszą niż 100 ms). Dlatego starter za każdym razem zmienia odstęp między komendą „gotowi” a strzałem, żeby nie dało się zrobić tego, co robisz tutaj.</p>' },
   { id: 'rytm', b: 'B', name: 'Trafienie w rytm', ds: 'dotknij na „0”, sygnału nie będzie', run: countdown('rytm'), rule: 'średni błąd bezwzględny (AE) plus 100 ms za każdą pominiętą próbę',
     instr: 'Zobaczysz odliczanie 3, 2, 1. Na „0” nic się nie pojawi. Dotknij dokładnie w rytmie, tam gdzie wypadłoby „0”.',
     info: '<p>To antycypacja czasowa bez sygnału, bo ruch trzeba zaplanować z góry. W nauce o ruchu używa się trzech miar błędu. CE, czyli błąd stały, mówi, czy średnio jesteś za wcześnie, czy za późno. VE, czyli błąd zmienny, mówi, jak powtarzalne są Twoje próby. AE, czyli błąd bezwzględny, to ogólna dokładność.</p><p>Przykłady ze sportu to wyjście do piłki, odbicie w rytmie rozbiegu i start w sztafecie.</p>' },
