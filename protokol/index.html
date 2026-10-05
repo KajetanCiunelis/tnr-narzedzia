@@ -316,7 +316,7 @@ body.projector .boardRule{font-size:22px}
 /* ================= KONFIGURACJA =================
    ENDPOINT: adres wdrożenia Google Apps Script (kończy się na /exec), instrukcja w ../apps_script/README.md.
    Pusty = strona działa bez tablicy wyników (wszystko lokalnie). */
-const ENDPOINT = '';
+const ENDPOINT = 'https://script.google.com/macros/s/AKfycbzCzE_wvdweE1r5DvP162h1M2wSgu151kcz25rnqi-PT0qbWvaW7HOW7EvGINa18MEK/exec';
 
 const Q = new URLSearchParams(location.search);
 const SHORT = Q.get('proby') === '3';
