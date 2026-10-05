@@ -7,6 +7,7 @@ Statyczne strony do ćwiczeń z Teorii nauczania ruchu (AWF Warszawa).
   - studenci: `https://tnr.ciunelis.com/speedtest/?kod=WT&pin=…` (link z PIN-em z zakładki `piny` arkusza; `&proby=3` = wersja skrócona)
   - rzutnik: `https://tnr.ciunelis.com/speedtest/?tablica&kod=WT` (wykresy grupy i ranking)
 - `protokol/index.html` – tylko przekierowanie starego adresu na `/speedtest/` z zachowaniem parametrów (linki z PIN-ami wygenerowane 5.10 mają jeszcze `/protokol/`).
+- `fonts/` – lokalne kopie czcionek Lato i Manrope (woff2, łacina + łacina rozszerzona) z licencjami OFL; strony nie łączą się z Google Fonts.
 - `czas-reakcji/index.html` – pierwszy, prosty test czasu reakcji (prosty, wybór 2, wybór 4; bodziec wzrok / dźwięk / wibracja). Pomiar w całości w przeglądarce, bez wysyłania danych.
 
 ## Publikacja
