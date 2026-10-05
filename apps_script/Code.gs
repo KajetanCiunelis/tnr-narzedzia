@@ -17,7 +17,7 @@
 
 const SHEET = 'wyniki';
 // grupy do utworzPiny(): kod grupy (litery/cyfry, do 8 znaków), opcjonalnie ':' i opis, np. prowadzący
-const GRUPY = ['G1', 'G2', 'G3', 'G4', 'G5', 'G6', 'G7', 'G8'];
+const GRUPY = ['WT:gr 03 wtorek 11:30', 'CZ:gr 01 czwartek 15:00'];
 const ADRES_STRONY = 'https://tnr.ciunelis.com/protokol/';
 const DAYS = 30;            // tablica pokazuje wyniki z ostatnich N dni
 const CACHE_S = 10;         // ranking w pamięci podręcznej (s), żeby rzutnik i telefony nie czytały arkusza co chwilę
