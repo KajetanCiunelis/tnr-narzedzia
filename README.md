@@ -2,14 +2,15 @@
 
 Statyczne strony do ćwiczeń z Teorii nauczania ruchu (AWF Warszawa).
 
-- `index.html` – test czasu reakcji (prosty, wybór 2, wybór 4). Pomiar w całości w przeglądarce, bez wysyłania danych.
-- `protokol/index.html` – pełny protokół na zajęcia 3: 9 zadań po 3–5 prób (~4 min). RT prosty / wybór 2 / wybór 4, sygnał po odliczaniu, trafienie w rytm, ruchomy cel, go/no-go, przeszukiwanie wzrokowe, Stroop; szata AWF (zieleń, Lato). Każde zadanie można powtórzyć osobno. Opcjonalna tablica wyników przez Google Apps Script (`apps_script/`, instrukcja w `apps_script/README.md`).
-  - studenci: `…/protokol/?kod=WT` (kod grupy wpisze się sam; `&proby=3` = wersja skrócona)
-  - rzutnik: `…/protokol/?tablica&kod=WT` (wykresy grupy i ranking)
-  - PIN do zapisu na tablicę: `&pin=…` w linku dla studentów (patrz `apps_script/README.md`)
+- `index.html` – strona startowa **Narzędzia TNR** z listą narzędzi (karta na narzędzie). Nowe narzędzie = nowy folder (np. `stroop/index.html`) + karta na stronie startowej.
+- `speedtest/index.html` – **Speedtest reakcji**, pełny protokół na zajęcia 3: 9 zadań po 3–5 prób (~4 min). RT prosty / wybór 2 / wybór 4, sygnał po odliczaniu, trafienie w rytm, ruchomy cel, go/no-go, przeszukiwanie wzrokowe, Stroop; szata AWF (zieleń, Lato). Każde zadanie można powtórzyć osobno. Tablica wyników przez Google Apps Script (`apps_script/`, instrukcja w `apps_script/README.md`).
+  - studenci: `https://tnr.ciunelis.com/speedtest/?kod=WT&pin=…` (link z PIN-em z zakładki `piny` arkusza; `&proby=3` = wersja skrócona)
+  - rzutnik: `https://tnr.ciunelis.com/speedtest/?tablica&kod=WT` (wykresy grupy i ranking)
+- `protokol/index.html` – tylko przekierowanie starego adresu na `/speedtest/` z zachowaniem parametrów (linki z PIN-ami wygenerowane 5.10 mają jeszcze `/protokol/`).
+- `czas-reakcji/index.html` – pierwszy, prosty test czasu reakcji (prosty, wybór 2, wybór 4; bodziec wzrok / dźwięk / wibracja). Pomiar w całości w przeglądarce, bez wysyłania danych.
 
 ## Publikacja
-Adres: **https://tnr.ciunelis.com/** (protokół: `https://tnr.ciunelis.com/protokol/`). Repo `KajetanCiunelis/tnr-narzedzia`, GitHub Pages z gałęzi `main`, folder `/ (root)`; plik `CNAME` w tym folderze ustawia domenę.
+Adres: **https://tnr.ciunelis.com/** (Speedtest: `https://tnr.ciunelis.com/speedtest/`). Repo `KajetanCiunelis/tnr-narzedzia`, GitHub Pages z gałęzi `main`, folder `/ (root)`; plik `CNAME` w tym folderze ustawia domenę.
 
 1. Repo na GitHubie (publiczne – Pages za darmo tylko dla publicznych), wgraj zawartość tego folderu (`POMYSLY_miniaplikacje.md` jest w `.gitignore`).
 2. Settings → Pages → Source: *Deploy from a branch*, branch `main`, folder `/ (root)`; Custom domain: `tnr.ciunelis.com`.

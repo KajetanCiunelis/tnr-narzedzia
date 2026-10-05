@@ -1,6 +1,6 @@
 # Tablica wyników: wdrożenie Apps Script (ok. 10 min, raz na semestr)
 
-Strona `protokol/` leży na GitHub Pages, który serwuje tylko statyczne pliki. Wyniki zapisuje i oddaje mały skrypt Google Apps Script podpięty do Twojego Arkusza. Studenci nie logują się nigdzie.
+Strona `speedtest/` leży na GitHub Pages, który serwuje tylko statyczne pliki. Wyniki zapisuje i oddaje mały skrypt Google Apps Script podpięty do Twojego Arkusza. Studenci nie logują się nigdzie.
 
 ## Kroki
 1. Utwórz nowy Arkusz Google, np. „TNR – tablica wyników 2026/27”.
@@ -9,7 +9,7 @@ Strona `protokol/` leży na GitHub Pages, który serwuje tylko statyczne pliki. 
    - Wykonaj jako: **Ja**
    - Kto ma dostęp: **Każdy**
 4. Kliknij *Wdróż*, zatwierdź uprawnienia (Google ostrzega, że aplikacja nie jest zweryfikowana: *Zaawansowane → Przejdź do…*). Skopiuj **URL aplikacji internetowej** (kończy się na `/exec`).
-5. W `protokol/index.html` wklej ten URL do stałej na górze skryptu:
+5. W `speedtest/index.html` wklej ten URL do stałej na górze skryptu:
    ```js
    const ENDPOINT = 'https://script.google.com/macros/s/…/exec';
    ```
@@ -18,10 +18,10 @@ Strona `protokol/` leży na GitHub Pages, który serwuje tylko statyczne pliki. 
 7. Test: otwórz w przeglądarce `<URL>/exec?kod=TEST`. Powinno się pokazać `{"ok":true,"rows":[]}`. Arkusz `wyniki` tworzy się sam przy pierwszym wywołaniu.
 
 ## Na zajęciach
-- QR dla studentów: link z kolumny „link dla studentów” w arkuszu `piny` (`…/protokol/?kod=G1&pin=227758`). Kod grupy i PIN wpiszą się same.
+- QR dla studentów: link z kolumny „link dla studentów” w arkuszu `piny` (`…/speedtest/?kod=G1&pin=227758`). Kod grupy i PIN wpiszą się same.
 - Inni prowadzący: sam link bez PIN-u wystarczy do przeprowadzenia testu. Jeśli mają mieć tablicę, daj im wiersz ich grupy z arkusza `piny`.
 - Nowe PIN-y (np. na następny semestr): uruchom ponownie `utworzPiny`. Stare przestaną działać od razu.
-- Na rzutnik: `https://tnr.ciunelis.com/protokol/?tablica&kod=WT`. Najpierw **wykresy grupy**: prawo Hicka, odliczanie a losowy odstęp, koszt Stroopa, przeszukiwanie i błąd stały w ruchomym celu. Szare linie to pojedyncze osoby (bez pseudonimów), zielona linia to mediana. Wykres pojawia się od 3 osób. Pod nimi **ranking** (wielobój i każde zadanie) dla zabawy. Strona odświeża się co 15 s. Przełączanie zakładek co 12 s jest domyślnie włączone; kliknięcie zakładki je wyłącza.
+- Na rzutnik: `https://tnr.ciunelis.com/speedtest/?tablica&kod=WT`. Najpierw **wykresy grupy**: prawo Hicka, odliczanie a losowy odstęp, koszt Stroopa, przeszukiwanie i błąd stały w ruchomym celu. Szare linie to pojedyncze osoby (bez pseudonimów), zielona linia to mediana. Wykres pojawia się od 3 osób. Pod nimi **ranking** (wielobój i każde zadanie) dla zabawy. Strona odświeża się co 15 s. Przełączanie zakładek co 12 s jest domyślnie włączone; kliknięcie zakładki je wyłącza.
 - Brak czasu: dopisz `&proby=3` do linku studentów (3 próby na zadanie, ok. 3 min).
 - Niestosowny pseudonim: usuń wiersz w arkuszu `wyniki`. Tablica zaktualizuje się w ciągu kilkunastu sekund.
 

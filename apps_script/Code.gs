@@ -1,5 +1,5 @@
 /**
- * Tablica wyników do protokołu reakcji TNR (05_ankieta/web/protokol/).
+ * Tablica wyników do protokołu reakcji TNR (05_ankieta/web/speedtest/).
  * Arkusz Google → Rozszerzenia → Apps Script → wklej ten plik → Wdróż jako aplikację internetową.
  * Instrukcja: README.md obok.
  *
@@ -20,7 +20,7 @@
 const SHEET = 'wyniki';
 // grupy do utworzPiny(): kod grupy (litery/cyfry, do 8 znaków), opcjonalnie ':' i opis, np. prowadzący
 const GRUPY = ['WT:gr 03 wtorek 11:30', 'CZ:gr 01 czwartek 15:00'];
-const ADRES_STRONY = 'https://tnr.ciunelis.com/protokol/';
+const ADRES_STRONY = 'https://tnr.ciunelis.com/speedtest/';
 const DAYS = 30;            // tablica pokazuje wyniki z ostatnich N dni
 const CACHE_S = 10;         // ranking w pamięci podręcznej (s), żeby rzutnik i telefony nie czytały arkusza co chwilę
 const LIMIT_OSOBA = 10;     // wysyłek jednej osoby (kod + pseudonim) na 10 min

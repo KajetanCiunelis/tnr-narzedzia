@@ -2,258 +2,90 @@
 <html lang="pl">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<title>Test czasu reakcji – TNR</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap">
+<title>Narzędzia TNR</title>
+<meta name="description" content="Narzędzia do ćwiczeń z Teorii nauczania ruchu, AWF Warszawa: testy czasu reakcji na telefonie.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&display=swap">
 <style>
+/* Szata AWF jak w /speedtest/: zieleń 006341 / 004A30, biel, zielone odcienie, Lato.
+   Żółty FBAE40 tylko jako kształt, nigdy żółty tekst na bieli.
+   Nowe narzędzie = nowy folder (np. /stroop/) + jedna karta w <main> niżej. */
 :root{
-  --bg:#f4f6f3; --panel:#ffffff; --ink:#18232b; --muted:#5f6b74; --line:#d9dfdc;
-  --accent:#0f6b4f; --wait:#b83a2e; --go:#1f9d5a; --go-ink:#ffffff; --warn:#8a5a00; --warn-bg:#fff4dc;
-  --btn:#18232b; --btn-ink:#ffffff; --tile:#e7ece9; --tile-hit:#1f9d5a;
+  color-scheme:light;
+  --bg:#ffffff; --panel:#f2f7f4; --tile:#e3eee8; --line:#c9d6cf;
+  --ink:#1f2933; --muted:#55636b;
+  --brand:#006341; --brand-dk:#004a30; --accent:#006341; --on-brand:#ffffff; --brand-sub:#cfe3d8;
+  --yellow:#fbae40;
 }
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
-  --bg:#121816; --panel:#1b2320; --ink:#eef2ef; --muted:#9aa7a0; --line:#2e3a35;
-  --accent:#5fcf9f; --wait:#d24b3d; --go:#25b569; --go-ink:#06140c; --warn:#f2c26b; --warn-bg:#2a2313;
-  --btn:#eef2ef; --btn-ink:#121816; --tile:#27322d; --tile-hit:#25b569;
+  color-scheme:dark;
+  --bg:#0d1613; --panel:#14211c; --tile:#1c2d26; --line:#293b33;
+  --ink:#e8f1ec; --muted:#a3b6ac; --accent:#7ad3a6;
 }}
 :root[data-theme="dark"]{
-  --bg:#121816; --panel:#1b2320; --ink:#eef2ef; --muted:#9aa7a0; --line:#2e3a35;
-  --accent:#5fcf9f; --wait:#d24b3d; --go:#25b569; --go-ink:#06140c; --warn:#f2c26b; --warn-bg:#2a2313;
-  --btn:#eef2ef; --btn-ink:#121816; --tile:#27322d; --tile-hit:#25b569;
+  color-scheme:dark;
+  --bg:#0d1613; --panel:#14211c; --tile:#1c2d26; --line:#293b33;
+  --ink:#e8f1ec; --muted:#a3b6ac; --accent:#7ad3a6;
 }
-html,body{height:100%}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:Manrope,system-ui,-apple-system,"Segoe UI",sans-serif;font-size:15px;line-height:1.45;
-  -webkit-text-size-adjust:100%;touch-action:manipulation;user-select:none;-webkit-user-select:none}
-.wrap{max-width:560px;margin:0 auto;padding-block:16px 32px;padding-inline:16px;display:flex;flex-direction:column;gap:14px}
-h1{font-size:22px;font-weight:800;margin:0;letter-spacing:-.01em;text-wrap:balance}
-.sub{color:var(--muted);font-size:13px;margin:0}
-.eyebrow{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
-.modes{display:flex;gap:8px;flex-wrap:wrap}
-.mode{flex:1 1 0;min-width:96px;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:10px;padding:10px 8px;font:inherit;font-weight:600;cursor:pointer}
-.mode:disabled{opacity:.4;cursor:not-allowed}
-.mode[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 2px var(--accent)}
-.mode small{display:block;font-weight:400;color:var(--muted);font-size:12px}
-#arena{position:relative;border-radius:16px;min-height:300px;background:var(--panel);border:1px solid var(--line);display:grid;place-items:center;text-align:center;cursor:pointer;overflow:hidden;-webkit-tap-highlight-color:transparent}
-#arena.wait{background:var(--wait);color:#fff;border-color:transparent}
-#arena.go{background:var(--go);color:var(--go-ink);border-color:transparent}
-#arena .big{font-size:30px;font-weight:800;line-height:1.1}
-#arena .hint{font-size:14px;opacity:.85;margin-top:8px;padding-inline:20px}
-#arena .msNum{font-size:56px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
-.grid{position:absolute;inset:0;display:grid;gap:8px;padding:8px}
-.grid.n2{grid-template-columns:1fr 1fr}
-.grid.n4{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr}
-.tile{background:var(--tile);border-radius:12px;display:grid;place-items:center;font-weight:800;font-size:28px;color:var(--muted)}
-.tile.hit{background:var(--tile-hit);color:var(--go-ink)}
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-.stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
-.stat .v{font-size:20px;font-weight:800;font-variant-numeric:tabular-nums}
-.stat .l{font-size:11px;color:var(--muted)}
-.trials{display:flex;gap:6px;flex-wrap:wrap;min-height:26px}
-.chip{background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:2px 10px;font-size:13px;font-variant-numeric:tabular-nums}
-.chip.bad{border-color:var(--wait);color:var(--wait)}
-.row{display:flex;gap:8px;flex-wrap:wrap}
-button.primary{flex:1 1 auto;background:var(--btn);color:var(--btn-ink);border:0;border-radius:10px;padding:12px 14px;font:inherit;font-weight:700;cursor:pointer}
-button.ghost{flex:1 1 auto;background:transparent;color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font:inherit;font-weight:600;cursor:pointer}
-button:focus-visible,.mode:focus-visible,#arena:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
-.result{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
-.result code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:15px;font-weight:700;background:var(--tile);padding:2px 6px;border-radius:6px}
-.note{background:var(--warn-bg);color:var(--warn);border-radius:10px;padding:10px 12px;font-size:13px}
-details{font-size:13px;color:var(--muted)}
-summary{cursor:pointer;font-weight:600;color:var(--ink)}
-ol{padding-left:18px;margin:6px 0}
-@media (prefers-reduced-motion: no-preference){#arena{transition:background-color .08s}}
-@media (max-width:420px){.stats{grid-template-columns:repeat(2,1fr)}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Lato,"Segoe UI",Arial,sans-serif;font-size:16px;line-height:1.5;-webkit-text-size-adjust:100%}
+.wrap{max-width:640px;margin:0 auto;padding-inline:16px;padding-block:16px 40px;display:flex;flex-direction:column;gap:18px}
+.band{position:relative;background:var(--brand);color:var(--on-brand);border-radius:14px;padding:22px 18px 20px;display:flex;flex-direction:column;gap:8px;overflow:hidden}
+.band .mark{width:36px;height:6px;background:var(--yellow);border-radius:1px}
+.band h1{font-size:28px;font-weight:900;margin:0;line-height:1.15;text-wrap:balance}
+.band p{margin:0;color:var(--brand-sub);max-width:52ch}
+.band .org{font-size:13px;font-weight:700}
+.band::after{content:"";position:absolute;right:-28px;bottom:-28px;width:96px;height:96px;border:14px solid rgba(255,255,255,.07);border-radius:50%}
+h2{font-size:15px;font-weight:900;margin:6px 0 0;color:var(--accent)}
+.tools{display:flex;flex-direction:column;gap:10px}
+a.tool{display:flex;gap:14px;align-items:center;text-decoration:none;color:var(--ink);background:var(--panel);border:1.5px solid transparent;border-radius:12px;padding:16px}
+a.tool:hover{border-color:var(--accent)}
+a.tool:focus-visible{outline:3px solid var(--yellow);outline-offset:2px}
+.tool .ico{flex:0 0 44px;height:44px;border-radius:10px;background:var(--brand);display:grid;place-items:center}
+.tool .ico svg{width:24px;height:24px;stroke:#ffffff;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.tool .txt{flex:1 1 auto;min-width:0}
+.tool .nm{font-weight:900;font-size:18px}
+.tool .ds{font-size:14px;color:var(--muted)}
+.tool .meta{font-size:13px;color:var(--muted);font-weight:700;margin-top:2px}
+.tool .go{flex:0 0 auto;width:20px;height:20px;stroke:var(--muted);fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.note{font-size:14px;color:var(--muted);margin:0;max-width:60ch}
+footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:12px}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div>
-    <div class="eyebrow">Teoria nauczania ruchu · AWF Warszawa</div>
-    <h1>Test czasu reakcji</h1>
-    <p class="sub">Telefon w dłoni, kciuk nad ekranem. Czekaj na sygnał, potem dotknij jak najszybciej. 5 prób, liczy się mediana.</p>
-  </div>
+  <header class="band">
+    <span class="mark" aria-hidden="true"></span>
+    <h1>Narzędzia TNR</h1>
+    <p>Krótkie testy na telefon do ćwiczeń z Teorii nauczania ruchu. Mierzysz zjawisko z zajęć na sobie, a wynik porównujesz z grupą.</p>
+    <p class="org">Teoria nauczania ruchu, AWF Warszawa</p>
+  </header>
 
-  <div class="modes" role="group" aria-label="Tryb testu">
-    <button class="mode" id="modeS" aria-pressed="true" data-n="1">Prosty<small>1 bodziec, 1 odpowiedź</small></button>
-    <button class="mode" id="mode2" aria-pressed="false" data-n="2">Wybór 2<small>dotknij pole, które się zapali</small></button>
-    <button class="mode" id="mode4" aria-pressed="false" data-n="4">Wybór 4<small>4 pola</small></button>
-  </div>
+  <main class="tools">
+    <h2>Czas reakcji i uwaga</h2>
+    <a class="tool" href="speedtest/">
+      <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M13 3L5 14h6l-1 7 8-11h-6z"/></svg></span>
+      <span class="txt">
+        <span class="nm">Speedtest reakcji</span>
+        <span class="ds">9 zadań: czas reakcji prosty i z wyborem, odliczanie, rytm, ruchomy cel, go/no-go, przeszukiwanie, Stroop. Wyniki można wysłać na tablicę grupy.</span>
+        <span class="meta">ok. 4 minuty · zajęcia 3</span>
+      </span>
+      <svg class="go" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+    </a>
+    <a class="tool" href="czas-reakcji/">
+      <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6"/></svg></span>
+      <span class="txt">
+        <span class="nm">Czas reakcji: wzrok, dźwięk, wibracja</span>
+        <span class="ds">Prosty test w trzech trybach (prosty, wybór 2, wybór 4) z wyborem bodźca. Sprawdzisz, czy na dźwięk reagujesz szybciej niż na obraz.</span>
+        <span class="meta">wibracja tylko na Androidzie</span>
+      </span>
+      <svg class="go" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+    </a>
+  </main>
 
-  <div class="modes" role="group" aria-label="Rodzaj bodźca">
-    <button class="mode stim" id="stimV" aria-pressed="true" data-s="v">Wzrok<small>zielony ekran / pole</small></button>
-    <button class="mode stim" id="stimA" aria-pressed="false" data-s="a">Dźwięk<small>ton; w „wybór 2” niski = 1, wysoki = 2</small></button>
-    <button class="mode stim" id="stimH" aria-pressed="false" data-s="h">Wibracja<small>tylko tryb prosty, Android</small></button>
-  </div>
-  <div class="row" id="soundRow" hidden><button class="ghost" id="soundTest">Sprawdź dźwięk (wyłącz tryb cichy, podnieś głośność)</button></div>
-
-  <div id="arena" tabindex="0" role="button" aria-label="Pole testu">
-    <div id="arenaMsg"><div class="big">Dotknij, aby zacząć</div><div class="hint">Nie dotykaj na czerwonym. Falstart nie liczy się do wyniku.</div></div>
-  </div>
-
-  <div class="stats" aria-live="polite">
-    <div class="stat"><div class="v" id="sMed">–</div><div class="l">mediana ms</div></div>
-    <div class="stat"><div class="v" id="sMean">–</div><div class="l">średnia ms</div></div>
-    <div class="stat"><div class="v" id="sBest">–</div><div class="l">najlepsza ms</div></div>
-    <div class="stat"><div class="v" id="sFalse">0</div><div class="l">falstarty / błędy</div></div>
-  </div>
-  <div class="trials" id="trials" aria-label="Wyniki prób"></div>
-
-  <div class="result" id="result" hidden>
-    <div class="eyebrow">Do wpisania w ankiecie</div>
-    <div id="resultText" style="margin-top:4px"></div>
-    <div class="row" style="margin-top:8px">
-      <button class="primary" id="copyBtn">Kopiuj wynik</button>
-      <button class="ghost" id="againBtn">Powtórz test</button>
-    </div>
-  </div>
-
-  <div class="note" id="latencyNote">Zmierzony czas zawiera opóźnienie ekranu i dotyku Twojego telefonu (zwykle 30–100 ms). Porównuj swoje tryby między sobą i wyniki w grupie, nie z tabelami z podręcznika.</div>
-
-  <details>
-    <summary>Jak to działa i co pokazuje</summary>
-    <ol>
-      <li><b>Prosty czas reakcji:</b> jeden bodziec, jedna odpowiedź. U dorosłych typowo 200–250 ms bez opóźnienia urządzenia.</li>
-      <li><b>Czas reakcji z wyborem:</b> więcej możliwych bodźców i odpowiedzi. Rośnie z logarytmem liczby alternatyw (prawo Hicka), bo etap wyboru odpowiedzi trwa dłużej.</li>
-      <li><b>Falstart</b> to reakcja na przewidywanie, nie na bodziec. Odstęp do zielonego jest losowy (1,5–4,5 s), żeby przewidywanie się nie opłacało.</li>
-      <li><b>Bodziec słuchowy</b> daje zwykle krótszy czas reakcji niż wzrokowy (o ok. 30–50 ms): sygnał ze ślimaka dociera do kory szybciej niż z siatkówki.</li>
-      <li>Wynik to mediana 5 poprawnych prób. Mediana jest odporna na pojedynczą bardzo wolną próbę.</li>
-    </ol>
-    <p>Pomiar wykonuje się w całości na Twoim telefonie (bez wysyłania danych). Nic nie jest zapisywane poza tą przeglądarką.</p>
-  </details>
+  <p class="note">Testy działają w przeglądarce telefonu i niczego nie instalują. Wyniki zostają na Twoim telefonie, chyba że sam wyślesz je na tablicę grupy (pod pseudonimem).</p>
+  <footer>Teoria nauczania ruchu · AWF Warszawa · 2026/27</footer>
 </div>
-
-<script>
-(function(){
-  const TRIALS = 5, MIN_WAIT = 1500, MAX_WAIT = 4500;
-  const arena = document.getElementById('arena'), msg = document.getElementById('arenaMsg');
-  const sMed = document.getElementById('sMed'), sMean = document.getElementById('sMean'), sBest = document.getElementById('sBest'), sFalse = document.getElementById('sFalse');
-  const trialsEl = document.getElementById('trials'), result = document.getElementById('result'), resultText = document.getElementById('resultText');
-  const modeBtns = [...document.querySelectorAll('.mode')];
-  let stim = 'v', audioCtx = null;
-  let n = 1, state = 'idle', times = [], errors = 0, timer = null, goAt = 0, target = -1, grid = null;
-  const labels = {1:'prosty',2:'wybór 2',4:'wybór 4'}, slabels = {v:'wzrok', a:'dźwięk', h:'wibracja'};
-  const stimBtns = [...document.querySelectorAll('.stim')];
-  const done = {};   // tryb -> mediana, na kod wyniku
-
-  function setMode(k){
-    n = k; modeBtns.forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.n === k)));
-    reset();
-  }
-  modeBtns.forEach(b => b.addEventListener('click', () => setMode(+b.dataset.n)));
-  function ensureAudio(){
-    try { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); } catch (e) {}
-    return audioCtx;
-  }
-  function tone(freq, dur, when){
-    const ctx = ensureAudio(); if (!ctx) return;
-    const o = ctx.createOscillator(), g = ctx.createGain(); o.type = 'sine'; o.frequency.value = freq;
-    g.gain.setValueAtTime(0.0001, when); g.gain.exponentialRampToValueAtTime(0.5, when + 0.005);
-    g.gain.setValueAtTime(0.5, when + dur - 0.02); g.gain.exponentialRampToValueAtTime(0.0001, when + dur);
-    o.connect(g); g.connect(ctx.destination); o.start(when); o.stop(when + dur + 0.02);
-  }
-  function setStim(k){
-    stim = k; stimBtns.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.s === k)));
-    document.getElementById('soundRow').hidden = (k !== 'a');
-    modeBtns.forEach(b => { const nn = +b.dataset.n; b.disabled = (k === 'h' && nn !== 1) || (k === 'a' && nn === 4); });
-    if ((k === 'h' && n !== 1) || (k === 'a' && n === 4)) { n = 1; modeBtns.forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.n === 1))); }
-    if (k === 'a') ensureAudio();
-    reset();
-  }
-  stimBtns.forEach(b => b.addEventListener('click', () => setStim(b.dataset.s)));
-  document.getElementById('stimH').disabled = !('vibrate' in navigator);
-  document.getElementById('soundTest').addEventListener('click', () => { const c = ensureAudio(); if (c) tone(1000, 0.15, c.currentTime + 0.02); });
-
-  function reset(){
-    clearTimeout(timer); state = 'idle'; times = []; errors = 0; target = -1;
-    arena.className = ''; removeGrid();
-    msg.hidden = false; msg.innerHTML = '<div class="big">Dotknij, aby zacząć</div><div class="hint">Bodziec: ' + slabels[stim] + ' · tryb: ' + labels[n] + '. Nie dotykaj, zanim pojawi się sygnał.</div>';
-    render();
-  }
-  function removeGrid(){ if (grid) { grid.remove(); grid = null; } }
-  function buildGrid(){
-    removeGrid(); grid = document.createElement('div'); grid.className = 'grid n' + n;
-    for (let i = 0; i < n; i++){ const t = document.createElement('div'); t.className = 'tile'; t.dataset.i = i; t.textContent = i + 1; grid.appendChild(t); }
-    arena.appendChild(grid);
-  }
-  function startWait(){
-    state = 'wait'; arena.className = 'wait'; msg.hidden = false;
-    msg.innerHTML = '<div class="big">' + (stim === 'a' ? 'Słuchaj…' : stim === 'h' ? 'Czekaj na wibrację…' : 'Czekaj…') + '</div><div class="hint">próba ' + (times.length + 1) + ' z ' + TRIALS + '</div>';
-    if (n > 1) buildGrid();
-    const wait = MIN_WAIT + Math.random() * (MAX_WAIT - MIN_WAIT);
-    timer = setTimeout(go, wait);
-  }
-  function go(){
-    target = n > 1 ? Math.floor(Math.random() * n) : 0;
-    if (stim === 'a'){
-      const ctx = ensureAudio(), lead = 0.06, freq = n === 1 ? 1000 : (target === 0 ? 400 : 1400);
-      if (ctx){ tone(freq, 0.15, ctx.currentTime + lead); goAt = performance.now() + lead * 1000; } else { goAt = performance.now(); }
-      if (n > 1) msg.hidden = true;
-      state = 'go'; return;             // ekran się nie zmienia: bodziec jest tylko słuchowy
-    }
-    if (stim === 'h'){
-      try { navigator.vibrate(80); } catch (e) {}
-      goAt = performance.now(); state = 'go'; return;
-    }
-    // wzrok: dwa kadry, żeby znacznik czasu odpowiadał faktycznemu wyświetleniu bodźca
-    requestAnimationFrame(() => {
-      if (n === 1){ arena.className = 'go'; msg.innerHTML = '<div class="big">TERAZ!</div>'; }
-      else { arena.className = ''; msg.hidden = true; grid.children[target].classList.add('hit'); }
-      requestAnimationFrame(() => { goAt = performance.now(); state = 'go'; });
-    });
-  }
-  function onTap(ev){
-    const t = performance.now();
-    if (state === 'idle' || state === 'done'){ if (state === 'done') reset(); startWait(); return; }
-    if (state === 'wait'){ clearTimeout(timer); errors++; flash('Falstart', 'za wcześnie — czekaj na sygnał'); return; }
-    if (state !== 'go') return;
-    if (n > 1){
-      const tile = ev.target.closest && ev.target.closest('.tile');
-      const idx = tile ? +tile.dataset.i : -1;
-      if (idx !== target){ errors++; state = 'between'; flash('Złe pole', stim === 'a' ? ('ton ' + (target === 0 ? 'niski = pole 1' : 'wysoki = pole 2')) : ('zapaliło się pole ' + (target + 1))); return; }
-    }
-    const rt = Math.round(t - goAt); times.push(rt); state = 'between';
-    showMs(rt);
-  }
-  function flash(title, hint){
-    arena.className = ''; removeGrid(); msg.hidden = false;
-    msg.innerHTML = '<div class="big">' + title + '</div><div class="hint">' + hint + '</div>';
-    render(); timer = setTimeout(startWait, 900);
-  }
-  function showMs(rt){
-    arena.className = ''; removeGrid(); msg.hidden = false;
-    msg.innerHTML = '<div class="msNum">' + rt + '</div><div class="hint">ms</div>';
-    render();
-    if (times.length >= TRIALS){ state = 'done'; timer = setTimeout(finish, 700); }
-    else timer = setTimeout(startWait, 900);
-  }
-  function median(a){ const s = [...a].sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : Math.round((s[m - 1] + s[m]) / 2); }
-  function render(){
-    sFalse.textContent = errors;
-    if (times.length){
-      sMed.textContent = median(times); sMean.textContent = Math.round(times.reduce((a, b) => a + b, 0) / times.length); sBest.textContent = Math.min(...times);
-    } else { sMed.textContent = sMean.textContent = sBest.textContent = '–'; }
-    trialsEl.innerHTML = times.map((v, i) => '<span class="chip">' + (i + 1) + ': ' + v + ' ms</span>').join('') + (errors ? '<span class="chip bad">błędy: ' + errors + '</span>' : '');
-  }
-  function finish(){
-    const key = stim + '|' + n; done[key] = median(times);
-    msg.innerHTML = '<div class="big">Gotowe: mediana ' + done[key] + ' ms</div><div class="hint">' + slabels[stim] + ', ' + labels[n] + '. Dotknij, aby powtórzyć, albo zmień bodziec lub tryb.</div>';
-    const parts = ['v|1','v|2','v|4','a|1','a|2','h|1'].filter(k => done[k] != null).map(k => { const [st, nn] = k.split('|'); return slabels[st] + ' ' + labels[+nn] + ' ' + done[k] + ' ms'; });
-    resultText.innerHTML = 'Wpisz: <code id="code">' + parts.join(' · ') + '</code>';
-    result.hidden = false;
-    try { localStorage.setItem('rt_done', JSON.stringify(done)); } catch (e) {}
-  }
-  arena.addEventListener('pointerdown', e => { if (stim === 'a') ensureAudio(); onTap(e); });
-  arena.addEventListener('keydown', e => { if (e.key === ' ' || e.key === 'Enter'){ e.preventDefault(); onTap(e); } });
-  arena.addEventListener('contextmenu', e => e.preventDefault());
-  document.getElementById('copyBtn').addEventListener('click', async () => {
-    const txt = document.getElementById('code').textContent;
-    try { await navigator.clipboard.writeText(txt); document.getElementById('copyBtn').textContent = 'Skopiowano'; }
-    catch (e) { document.getElementById('copyBtn').textContent = 'Przepisz ręcznie'; }
-  });
-  document.getElementById('againBtn').addEventListener('click', () => { reset(); });
-  try { const d = JSON.parse(localStorage.getItem('rt_done') || '{}'); Object.assign(done, d); } catch (e) {}
-})();
-</script>
 </body>
 </html>
