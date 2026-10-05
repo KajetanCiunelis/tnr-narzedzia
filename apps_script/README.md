@@ -22,7 +22,7 @@ Strona `speedtest/` leży na GitHub Pages, który serwuje tylko statyczne pliki.
 - Inni prowadzący: sam link bez PIN-u wystarczy do przeprowadzenia testu. Jeśli mają mieć tablicę, daj im wiersz ich grupy z arkusza `piny`.
 - Nowa grupa (np. inny prowadzący) bez ruszania istniejących PIN-ów: dopisz ją do `GRUPY` i uruchom **`dodajPiny`**. Nowy wiersz pojawi się w arkuszu `piny`. Tak dodano 5.10 grupy `MO` (Monika) i `AG` (Agnieszka).
 - Nowe PIN-y (np. na następny semestr): uruchom ponownie `utworzPiny`. Stare przestaną działać od razu. **Uwaga:** dotyczy wszystkich grup naraz.
-- Na rzutnik: `https://tnr.ciunelis.com/speedtest/?tablica&kod=WT`. Najpierw **wykresy grupy**: prawo Hicka, odliczanie a losowy odstęp, koszt Stroopa, przeszukiwanie i błąd stały w ruchomym celu. Szare linie to pojedyncze osoby (bez pseudonimów), zielona linia to mediana. Wykres pojawia się od 3 osób. Pod nimi **ranking** (wielobój i każde zadanie) dla zabawy. Strona odświeża się co 15 s. Przełączanie zakładek co 12 s jest domyślnie włączone; kliknięcie zakładki je wyłącza.
+- Na rzutnik: `https://tnr.ciunelis.com/speedtest/?tablica&kod=WT`. **Tablica pyta o PIN grupy** (pole z ukrytymi cyframi), potem pamięta go na tym komputerze. PIN dopisany do linku (`&pin=…`) też zadziała i od razu zniknie z paska adresu. Najpierw **wykresy grupy**: prawo Hicka, odliczanie a losowy odstęp, koszt Stroopa, przeszukiwanie i błąd stały w ruchomym celu. Szare linie to pojedyncze osoby (bez pseudonimów), zielona linia to mediana. Wykres pojawia się od 3 osób. Pod nimi **ranking** (wielobój i każde zadanie) dla zabawy. Strona odświeża się co 15 s. Przełączanie zakładek co 12 s jest domyślnie włączone; kliknięcie zakładki je wyłącza.
 - Brak czasu: dopisz `&proby=3` do linku studentów (3 próby na zadanie, ok. 3 min).
 - Niestosowny pseudonim: usuń wiersz w arkuszu `wyniki`. Tablica zaktualizuje się w ciągu kilkunastu sekund.
 
@@ -30,7 +30,7 @@ Strona `speedtest/` leży na GitHub Pages, który serwuje tylko statyczne pliki.
 Po edycji `Code.gs`: **Wdróż → Zarządzaj wdrożeniami → ołówek → Wersja: Nowa wersja → Wdróż**. URL zostaje ten sam. *Nowe wdrożenie* dałoby nowy URL.
 
 ## Ochrona
-- Zapis tylko z poprawnym PIN-em grupy, a grupę ustala PIN. Po 30 błędnych PIN-ach w ciągu 10 min zapis jest blokowany na 10 min.
+- Zapis i odczyt tablicy tylko z poprawnym PIN-em grupy, a grupę ustala PIN (bez PIN-u nikt nie zobaczy rankingu ani wykresów). Po 30 błędnych PIN-ach w ciągu 10 min zapis jest blokowany na 10 min.
 - Jedna osoba (kod + pseudonim) może wysłać najwyżej 10 razy na 10 min, a wszyscy razem 300 razy na minutę.
 - Skrypt przyjmuje tylko znane zadania i wyniki w sensownym zakresie. Z pseudonimu wycina znaczniki i znaki, od których arkusz zaczyna formułę.
 - Strona wstawia pseudonimy jako zwykły tekst, więc nie da się nimi niczego „podłożyć” na tablicy.

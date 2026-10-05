@@ -284,7 +284,7 @@ body.projector .boardRule{font-size:22px}
   </div>
   <div class="card" id="sendCard">
     <div class="eyebrow">Tablica wyników dla chętnych</div>
-    <p class="sub" style="margin:0">Wpisz pseudonim, a nie imię i nazwisko. PIN grupy podaje prowadzący, on też decyduje, do której grupy trafią wyniki. Wysyłamy tylko pseudonim, odpowiedź o sporcie (jeśli ją podasz) i wyniki.</p>
+    <p class="sub" style="margin:0" id="sendInfo">Wpisz pseudonim (nie imię i nazwisko) i PIN od prowadzącego.</p>
     <div class="form">
       <label class="full">Pseudonim<input id="fNick" maxlength="16" autocomplete="off" placeholder="np. Kangur7"></label>
       <label class="full">Trenujesz sport, w którym reagujesz na piłkę lub rywala?<select id="fSport"><option value="">nie podaję</option><option value="T">tak</option><option value="N">nie</option></select></label>
@@ -303,6 +303,12 @@ body.projector .boardRule{font-size:22px}
     <h1 id="boardTitle">Tablica wyników</h1>
     <p class="sub" id="boardJoin"></p>
   </header>
+  <form class="card" id="boardPin" hidden>
+    <div class="eyebrow">Tablica jest dostępna po podaniu PIN-u grupy</div>
+    <div class="form"><label class="full">PIN grupy<input id="bPin" type="password" inputmode="numeric" autocomplete="off" maxlength="12"></label></div>
+    <div class="row"><button class="primary" type="submit">Pokaż tablicę</button></div>
+    <div id="bPinMsg" class="err" aria-live="polite"></div>
+  </form>
   <div id="boardTabs"></div>
   <div class="boardRule" id="boardRule"></div>
   <div class="chartBox" id="boardChart" hidden></div>
@@ -822,10 +828,11 @@ function renderSummary(){
   $('copyBtn').textContent = 'Kopiuj wynik';
   $('sendCard').hidden = !ENDPOINT;
   $('fNick').value = S.nick || ''; $('fSport').value = S.sport || ''; $('fPin').value = S.pin || '';
+  $('sendInfo').textContent = S.pin ? 'Wpisz pseudonim (nie imię i nazwisko). PIN grupy jest już wpisany.' : 'Wpisz pseudonim (nie imię i nazwisko) i PIN od prowadzącego.';
   updateBoardLink();
   $('sendMsg').textContent = '';
 }
-function boardURL(kod){ return location.pathname + '?tablica' + (kod ? '&kod=' + encodeURIComponent(kod) : ''); }
+function boardURL(kod){ return location.pathname + '?tablica' + (kod ? '&kod=' + encodeURIComponent(kod) : '') + (S.pin ? '&pin=' + encodeURIComponent(S.pin) : ''); }
 function updateBoardLink(){ $('boardLink').href = boardURL(S.kod || ''); }
 $('copyBtn').addEventListener('click', async () => {
   try { await navigator.clipboard.writeText(summaryCode()); $('copyBtn').textContent = 'Skopiowano'; }
@@ -848,14 +855,15 @@ const api = {
     const r = await fetch(ENDPOINT, { method: 'POST', body: JSON.stringify(payload) });
     const j = await r.json(); if (!j.ok){ const e = new Error(j.error || 'błąd serwera'); e.code = j.code; throw e; } return j;
   },
-  async board(kod){
-    const r = await fetch(ENDPOINT + '?kod=' + encodeURIComponent(kod || '') + '&_=' + Date.now());
-    const j = await r.json(); if (!j.ok) throw new Error(j.error || 'błąd serwera'); return j.rows || [];
+  // odczyt tylko z PIN-em; grupę wyznacza PIN → { kod, rows }
+  async board(pin){
+    const r = await fetch(ENDPOINT + '?pin=' + encodeURIComponent(pin || '') + '&_=' + Date.now());
+    const j = await r.json(); if (!j.ok){ const e = new Error(j.error || 'błąd serwera'); e.code = j.code; throw e; } return { kod: j.kod || '', rows: j.rows || [] };
   },
   // wyniki do wykresów: ostatnie podejście każdej osoby, bez pseudonimów (p = numer osoby)
-  async group(kod){
-    const r = await fetch(ENDPOINT + '?tryb=grupa&kod=' + encodeURIComponent(kod || '') + '&_=' + Date.now());
-    const j = await r.json(); if (!j.ok) throw new Error(j.error || 'błąd serwera'); return j.rows || [];
+  async group(pin){
+    const r = await fetch(ENDPOINT + '?tryb=grupa&pin=' + encodeURIComponent(pin || '') + '&_=' + Date.now());
+    const j = await r.json(); if (!j.ok){ const e = new Error(j.error || 'błąd serwera'); e.code = j.code; throw e; } return j.rows || [];
   }
 };
 function rankings(rows){
@@ -905,7 +913,7 @@ $('sendBtn').addEventListener('click', async () => {
 async function showMyPlaces(nick, kod){
   const box = $('myPlaces'); box.textContent = '';
   try {
-    const by = rankings(await api.board(kod)), me = (kod + '|' + nick.toLowerCase());
+    const by = rankings((await api.board(S.pin)).rows), me = (kod + '|' + nick.toLowerCase());
     const grid = document.createElement('div'); grid.className = 'places';
     const head = document.createElement('div'); head.className = 'eyebrow'; head.style.gridColumn = '1 / -1'; head.textContent = 'Twoje miejsca' + (kod ? ' w grupie ' + kod : ''); grid.appendChild(head);
     MODS.forEach(m => {
@@ -1035,9 +1043,12 @@ const CHARTS = [
 function initBoard(){
   document.body.classList.add('projector');
   showView('vBoard');
-  const kod = (Q.get('kod') || '').toUpperCase();
-  $('boardTitle').textContent = 'Wyniki grupy' + (kod ? ' ' + kod : '');
-  $('boardJoin').textContent = 'Link do testu: ' + location.origin + location.pathname + (kod ? '?kod=' + kod : '');
+  let kod = (Q.get('kod') || '').toUpperCase();
+  function setTitle(k){
+    $('boardTitle').textContent = 'Wyniki grupy' + (k ? ' ' + k : '');
+    $('boardJoin').textContent = 'Link do testu: ' + location.origin + location.pathname + (k ? '?kod=' + k : '');
+  }
+  setTitle(kod);
   if (!ENDPOINT){ $('boardRule').textContent = 'Tablica nie jest skonfigurowana. Wpisz adres Apps Script w stałej ENDPOINT (instrukcja w apps_script/README.md).'; return; }
   let by = {}, P = [], tabs = [], cur = 'g_hick';
   function drawTabs(){
@@ -1078,24 +1089,50 @@ function initBoard(){
       chart.innerHTML = out.svg;   // SVG z samych liczb, bez pseudonimów
     } else if (cur === 'all'){
       const ar = allround(by);
-      $('boardRule').textContent = ar.length ? 'Liczy się suma miejsc ze wszystkich zadań, jak w wieloboju. Kto nie zrobił zadania, dostaje w nim miejsce za ostatnią osobą. Ranking porównuje też telefony, więc traktuj go jako zabawę.' : 'Jeszcze nikt nie wysłał wyniku.';
+      $('boardRule').textContent = ar.length ? 'Liczy się suma miejsc ze wszystkich zadań, jak w wieloboju. Kto nie zrobił zadania, dostaje w nim miejsce za ostatnią osobą.' : 'Jeszcze nikt nie wysłał wyniku.';
       ar.slice(0, 10).forEach((p, i) => list.appendChild(li(i + 1, p.nick, p.kod, String(p.sum), 'pkt, ' + pl(p.cnt, 'zadanie', 'zadania', 'zadań'))));
     } else {
       $('boardRule').textContent = MOD[cur].name + '. Liczy się ' + MOD[cur].rule + '. Im mniej, tym lepiej.';
       by[cur].slice(0, 10).forEach((r, i) => list.appendChild(li(i + 1, r.nick, r.kod, r.disp || String(r.score), r.disp && Math.round(r.score) !== parseInt(r.disp.replace(/\D+/, ''), 10) ? '(z karą ' + Math.round(r.score) + ')' : '')));
     }
   }
+  // PIN: z linku (potem znika z paska adresu, bo to idzie na rzutnik), zapamiętany na tym komputerze albo z formularza
+  const PKEY = 'tnr_tablica_pin';
+  let pin = (Q.get('pin') || '').trim(), started = false;
+  if (Q.get('pin')){
+    try { const u = new URL(location.href); u.searchParams.delete('pin'); history.replaceState(null, '', u.pathname + '?' + u.searchParams.toString().replace(/tablica=(&|$)/, 'tablica$1')); } catch (e) {}
+  }
+  if (!pin){ try { pin = localStorage.getItem(PKEY) || ''; } catch (e) {} }
+  function askPin(m){
+    $('boardPin').hidden = false; $('bPinMsg').textContent = m || '';
+    $('boardTabs').textContent = ''; $('boardRule').textContent = ''; $('boardList').textContent = ''; $('boardChart').hidden = true; $('boardStamp').textContent = '';
+    $('bPin').focus();
+  }
+  $('boardPin').addEventListener('submit', ev => { ev.preventDefault(); pin = $('bPin').value.trim(); if (pin) refresh(); });
+  function autoTab(){ if ($('boardAuto').checked && tabs.length > 1){ cur = tabs[(tabs.indexOf(cur) + 1) % tabs.length]; draw(); } }
   async function refresh(){
+    if (!pin){ if ($('boardPin').hidden) askPin(); return; }
     try {
-      const [rows, grp] = await Promise.all([api.board(kod), api.group(kod)]);
-      by = rankings(rows);
+      const [b, grp] = await Promise.all([api.board(pin), api.group(pin)]);
+      try { localStorage.setItem(PKEY, pin); } catch (e) {}
+      $('boardPin').hidden = true; $('bPin').value = '';
+      if (b.kod && b.kod !== kod){ kod = b.kod; setTitle(kod); }
+      if (!started){ started = true; setInterval(refresh, 15000); setInterval(autoTab, 12000); }
+      by = rankings(b.rows);
       const m = {}; grp.forEach(r => { if (MOD[r.mod] && r.det){ const o = (m[r.p] = m[r.p] || {}); o[r.mod] = r.det; if (r.s) o._sport = r.s; } }); P = Object.values(m);
       $('boardStamp').textContent = 'Zaktualizowano o ' + new Date().toLocaleTimeString('pl-PL') + ', osób: ' + P.length;
-    } catch (e){ $('boardStamp').textContent = 'Brak połączenia. Próbuję ponownie…'; }
+    } catch (e){
+      if (e.code === 'pin' || e.code === 'locked'){
+        pin = ''; try { localStorage.removeItem(PKEY); } catch (_) {}
+        askPin(e.code === 'locked' ? 'Za dużo prób z błędnym PIN-em. Spróbuj ponownie za 10 minut.' : 'Nieprawidłowy PIN.');
+        return;
+      }
+      $('boardStamp').textContent = 'Brak połączenia. Próbuję ponownie…';
+      if (!started) return;
+    }
     draw();
   }
-  refresh(); setInterval(refresh, 15000);
-  setInterval(() => { if ($('boardAuto').checked && tabs.length > 1){ cur = tabs[(tabs.indexOf(cur) + 1) % tabs.length]; draw(); } }, 12000);
+  refresh();
 }
 
 // częstotliwość odświeżania ekranu (mediana odstępów między klatkami)

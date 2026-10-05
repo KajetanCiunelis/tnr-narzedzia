@@ -5,8 +5,8 @@
  *
  * POST (body: JSON jako text/plain): {nick, kod, sport, ua, wyniki:[{mod, score, disp, det}]} → dopisuje wiersze.
  *   sport: 'T' = trenuje sport z reakcją na bodziec (piłka, rywal), 'N' = nie, '' = nie podał.
- * GET ?kod=WT → {ok, rows:[{kod, nick, mod, score, disp}]}: najlepszy wynik każdej osoby w każdym zadaniu.
- * GET ?tryb=grupa&kod=WT → {ok, rows:[{p, mod, det, s}]}: ostatnie podejście każdej osoby do wykresów, bez pseudonimów
+ * GET ?pin=… → {ok, kod, rows:[{kod, nick, mod, score, disp}]}: najlepszy wynik każdej osoby w każdym zadaniu.
+ * GET ?tryb=grupa&pin=… → {ok, kod, rows:[{p, mod, det, s}]}: ostatnie podejście każdej osoby do wykresów, bez pseudonimów
  *   (s = sport T/N/'').
  * Moderacja: usuń wiersz w arkuszu „wyniki”.
  *
@@ -14,7 +14,8 @@
  * PIN-y wylosuje funkcja utworzPiny() (lista GRUPY niżej) albo wpisz ręcznie w Ustawieniach projektu →
  * Właściwości skryptu, klucz PINY, np. 482193=WT,730511=CZ:Kowalska (po dwukropku opcjonalny opis).
  * Pusta właściwość = tablica wyłączona.
- * Odczyt rankingu (GET) zostaje otwarty, bo pokazuje tylko pseudonimy i wyniki.
+ * Odczyt tablicy (GET) też wymaga PIN-u i pokazuje tylko grupę z tego PIN-u (kod z linku jest ignorowany).
+ * Błędne PIN-y przy odczycie liczą się do tego samego limitu co przy zapisie.
  */
 
 const SHEET = 'wyniki';
@@ -181,9 +182,17 @@ function doPost(e) {
 
 function doGet(e) {
   try {
-    const kod = clean_((e && e.parameter && e.parameter.kod) || '', 8).replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+    const p = (e && e.parameter) || {};
     const cache = CacheService.getScriptCache();
-    if (e && e.parameter && e.parameter.tryb === 'grupa') return group_(kod, cache);
+    if (Number(cache.get('zly_pin') || 0) >= LIMIT_ZLY_PIN) return json_({ ok: false, code: 'locked', error: 'za dużo błędnych PIN-ów' });
+    const pin = String(p.pin == null ? '' : p.pin).trim(), pins = pins_();
+    const grupa = Object.prototype.hasOwnProperty.call(pins, pin) ? pins[pin] : null;
+    if (!grupa) {
+      if (pin) bump_(cache, 'zly_pin', 600);   // pusty PIN (np. stara wersja strony) nie zużywa limitu
+      return json_({ ok: false, code: 'pin', error: 'zły PIN' });
+    }
+    const kod = grupa.kod;
+    if (p.tryb === 'grupa') return group_(kod, cache);
     const key = 'b_' + kod;
     const hit = cache.get(key);
     if (hit) return ContentService.createTextOutput(hit).setMimeType(ContentService.MimeType.JSON);
@@ -200,7 +209,7 @@ function doGet(e) {
       const id = k + '|' + nick.toLowerCase() + '|' + mod;
       if (!best[id] || score < best[id].score) best[id] = { kod: k, nick: nick, mod: mod, score: score, disp: disp };
     });
-    const out = JSON.stringify({ ok: true, rows: Object.keys(best).map(function (id) { return best[id]; }) });
+    const out = JSON.stringify({ ok: true, kod: kod, rows: Object.keys(best).map(function (id) { return best[id]; }) });
     if (out.length < 90000) cache.put(key, out, CACHE_S);
     return ContentService.createTextOutput(out).setMimeType(ContentService.MimeType.JSON);
   } catch (err) {
@@ -231,7 +240,7 @@ function group_(kod, cache) {
     if (!(x.who in ids)) ids[x.who] = Object.keys(ids).length;
     rows.push({ p: ids[x.who], mod: x.mod, det: det, s: (x.s === 'T' || x.s === 'N') ? x.s : '' });
   });
-  const out = JSON.stringify({ ok: true, rows: rows });
+  const out = JSON.stringify({ ok: true, kod: kod, rows: rows });
   if (out.length < 90000) cache.put(key, out, CACHE_S);
   return ContentService.createTextOutput(out).setMimeType(ContentService.MimeType.JSON);
 }
