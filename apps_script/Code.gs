@@ -19,7 +19,7 @@
 
 const SHEET = 'wyniki';
 // grupy do utworzPiny(): kod grupy (litery/cyfry, do 8 znaków), opcjonalnie ':' i opis, np. prowadzący
-const GRUPY = ['WT:gr 03 wtorek 11:30', 'CZ:gr 01 czwartek 15:00'];
+const GRUPY = ['WT:gr 03 wtorek 11:30', 'CZ:gr 01 czwartek 15:00', 'MO:Monika', 'AG:Agnieszka'];
 const ADRES_STRONY = 'https://tnr.ciunelis.com/speedtest/';
 const DAYS = 30;            // tablica pokazuje wyniki z ostatnich N dni
 const CACHE_S = 10;         // ranking w pamięci podręcznej (s), żeby rzutnik i telefony nie czytały arkusza co chwilę
@@ -70,7 +70,8 @@ function pins_() {
 }
 
 // Uruchom raz z edytora: losuje 6-cyfrowy PIN dla każdej grupy z GRUPY, zapisuje PINY
-// i tworzy arkusz „piny” z linkami dla studentów (do QR) i na rzutnik. Ponowne uruchomienie = nowe PIN-y.
+// i tworzy arkusz „piny” z linkami dla studentów (do QR) i na rzutnik. Ponowne uruchomienie = nowe PIN-y
+// dla WSZYSTKICH grup (stare linki przestają działać). Nowa grupa bez ruszania starych: dodajPiny().
 function utworzPiny() {
   const used = {}, pary = [], sh = SpreadsheetApp.getActiveSpreadsheet();
   const tab = sh.getSheetByName('piny') || sh.insertSheet('piny');
@@ -87,6 +88,32 @@ function utworzPiny() {
   PropertiesService.getScriptProperties().setProperty('PINY', pary.join(','));
   tab.autoResizeColumns(1, 5);
   Logger.log('Zapisano PINY: ' + pary.join(','));
+}
+
+// Uruchom z edytora po dopisaniu grupy do GRUPY: losuje PIN tylko dla grup, których jeszcze nie ma w PINY,
+// i dopisuje je do arkusza „piny”. Istniejące PIN-y (i linki/QR) zostają bez zmian.
+function dodajPiny() {
+  const props = PropertiesService.getScriptProperties();
+  const stare = pins_(), maKod = {}, used = {};
+  Object.keys(stare).forEach(function (pin) { used[pin] = 1; maKod[stare[pin].kod] = 1; });
+  const pary = (props.getProperty('PINY') || '').split(',').filter(function (x) { return x.trim(); });
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let tab = ss.getSheetByName('piny');
+  if (!tab) { tab = ss.insertSheet('piny'); tab.appendRow(['grupa', 'PIN', 'opis', 'link dla studentów (QR)', 'link na rzutnik']); }
+  const nowe = [];
+  GRUPY.forEach(function (g) {
+    const c = g.indexOf(':'), kod = (c < 0 ? g : g.slice(0, c)).replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 8), opis = c < 0 ? '' : g.slice(c + 1);
+    if (!kod || maKod[kod]) return;
+    let pin;
+    do { pin = String(100000 + Math.floor(Math.random() * 900000)); } while (used[pin]);
+    used[pin] = 1; maKod[kod] = 1;
+    pary.push(pin + '=' + kod + (opis ? ':' + opis : ''));
+    tab.appendRow([kod, "'" + pin, opis, ADRES_STRONY + '?kod=' + kod + '&pin=' + pin, ADRES_STRONY + '?tablica&kod=' + kod]);
+    nowe.push(kod);
+  });
+  props.setProperty('PINY', pary.join(','));
+  tab.autoResizeColumns(1, 5);
+  Logger.log(nowe.length ? 'Dodano grupy: ' + nowe.join(', ') + ' (pozostałe PIN-y bez zmian)' : 'Wszystkie grupy z GRUPY mają już PIN.');
 }
 
 // licznik w pamięci podręcznej; wołać pod blokadą

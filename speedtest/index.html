@@ -225,7 +225,7 @@ body.projector .boardRule{font-size:22px}
     <p class="org">Teoria nauczania ruchu, AWF Warszawa</p>
   </header>
   <div class="note">
-    <p>Zmierzony czas zawiera też opóźnienie ekranu i dotyku Twojego telefonu, zwykle 30–100 ms. Dlatego porównuj swoje wyniki między zadaniami. Na tablicy każdy ma inny telefon, więc traktuj ją jako zabawę, a nie normę.</p>
+    <p>Zmierzony czas zawiera też opóźnienie ekranu i dotyku Twojego telefonu, zwykle 30–100 ms. Dlatego porównuj swoje wyniki między zadaniami.</p>
     <details>
       <summary>Skąd bierze się to opóźnienie</summary>
       <p>Strona wie, kiedy wysłała obraz na ekran i kiedy telefon zgłosił dotyk. Nie widzi dwóch odcinków, które doliczają się do wyniku.</p>
@@ -251,6 +251,7 @@ body.projector .boardRule{font-size:22px}
   <div class="runhead">
     <button class="ghost sm" id="backBtn" aria-label="Wróć do listy zadań"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg> Lista</button>
     <div class="t"><div class="runTitle" id="runTitle"></div><div class="prog"><span id="runBlock"></span>, zadanie <span id="runProg"></span></div></div>
+    <button class="ghost sm" id="skipBtn" aria-label="Pomiń to zadanie">Pomiń <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
   </div>
   <div class="arena" id="arena" tabindex="0" role="button" aria-label="Pole zadania"></div>
   <div class="status" id="runStatus" aria-live="polite"></div>
@@ -795,6 +796,14 @@ $('nextBtn').addEventListener('click', () => {
   else openModule(MODS[idx + 1].id, inProtocol);
 });
 $('backBtn').addEventListener('click', () => { abortRun(); renderHome(); showView('vHome'); });
+// pominięcie: w pełnym protokole następne zadanie (po ostatnim podsumowanie), pojedyncze zadanie wraca do listy
+$('skipBtn').addEventListener('click', () => {
+  abortRun();
+  const idx = MODS.indexOf(curMod);
+  if (inProtocol && idx < MODS.length - 1) openModule(MODS[idx + 1].id, true);
+  else if (inProtocol){ renderSummary(); showView('vSum'); }
+  else { renderHome(); showView('vHome'); }
+});
 $('toSummary').addEventListener('click', () => { renderSummary(); showView('vSum'); });
 $('sumBack').addEventListener('click', () => { renderHome(); showView('vHome'); });
 
