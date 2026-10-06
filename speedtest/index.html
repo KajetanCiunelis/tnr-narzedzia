@@ -944,7 +944,7 @@ function niceTicks(lo, hi, want){
 // wykres liniowy: xs = położenia (np. log2 N), persons = tablice wartości (null = brak), med = mediana na każde x
 function lineChart(o){
   const hasExtra = !!(o.extra && o.extra.length);
-  const W = 800, H = 420, L = 78, R = hasExtra ? 200 : 150, T = 44, B = 64, PAD = 34;
+  const W = 800, H = 420, L = 78, R = hasExtra ? 240 : 150, T = 44, B = 64, PAD = 34;
   const lab = [];   // podpisy na prawym marginesie, rozsuwane, żeby się nie nakładały
   const vals = o.persons.flat().filter(v => v != null).concat(o.med.filter(v => v != null), (o.extra || []).flatMap(e => e.med.filter(v => v != null)), o.zero ? [0] : []);
   const ticks = niceTicks(Math.min(...vals), Math.max(...vals), 5), y0 = ticks[0], y1 = ticks[ticks.length - 1];
@@ -965,19 +965,20 @@ function lineChart(o){
   (o.extra || []).forEach(e => {  // mediany podgrup: linia przerywana, opis na prawym marginesie
     const sp = e.med.map((v, i) => v == null ? null : [X(o.xs[i]), Y(v)]).filter(Boolean);
     if (sp.length > 1) g += '<polyline class="sline ' + e.cls + '" points="' + sp.map(q => q.join(',')).join(' ') + '"><title>' + esc(e.label) + '</title></polyline>';
-    if (sp.length) lab.push({ y: sp[sp.length - 1][1], cls: 'skey', html: esc(e.label) });
+    if (sp.length) lab.push({ y: sp[sp.length - 1][1], cls: 'skey', sw: 'sline ' + e.cls, html: esc(e.label) });
   });
   const mp = o.med.map((v, i) => v == null ? null : [X(o.xs[i]), Y(v), v]).filter(Boolean);
   if (mp.length > 1) g += '<polyline class="mline" points="' + mp.map(p => p[0] + ',' + p[1]).join(' ') + '"/>';
   mp.forEach(([x, y, v], i) => {
     g += '<circle class="mdot" cx="' + x + '" cy="' + y + '" r="8"><title>mediana grupy: ' + v + ' ms</title></circle>';
-    if (hasExtra && i === mp.length - 1) lab.push({ y: y, cls: 'mkey', html: '<tspan class="mval">' + v + '</tspan> mediana grupy' });
+    if (hasExtra && i === mp.length - 1) lab.push({ y: y, cls: 'mkey', sw: 'mline', html: '<tspan class="mval">' + v + '</tspan> cała grupa' });
     else g += '<text class="mlab" x="' + (x + 14) + '" y="' + (y - 12) + '">' + v + '</text>';
   });
   if (mp.length && !hasExtra){ const [x, y] = mp[mp.length - 1]; g += '<text class="mkey" x="' + (x + 14) + '" y="' + (y + 28) + '">mediana grupy</text>'; }
   lab.sort((a, b) => a.y - b.y);
   for (let i = 1; i < lab.length; i++) if (lab[i].y - lab[i - 1].y < 26) lab[i].y = lab[i - 1].y + 26;
-  lab.forEach(l => { g += '<text class="' + l.cls + '" x="' + (W - R + 12) + '" y="' + (l.y + 6) + '">' + l.html + '</text>'; });
+  // legenda: odcinek w stylu linii + opis, żeby było jasne, która linia jest czyja
+  lab.forEach(l => { const x = W - R + 12; g += (l.sw ? '<line class="' + l.sw + '" x1="' + x + '" x2="' + (x + 26) + '" y1="' + l.y + '" y2="' + l.y + '"/>' : '') + '<text class="' + l.cls + '" x="' + (x + (l.sw ? 34 : 0)) + '" y="' + (l.y + 6) + '">' + l.html + '</text>'; });
   return '<svg class="chart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(o.aria) + '">' + g + '</svg>';
 }
 // rozrzut jednej miary (np. koszt Stroopa): punkt na osobę, pionowa linia zera i mediany
@@ -1011,9 +1012,9 @@ const CHARTS = [
       const pt = P.filter(d => ok(d) && d._sport === 'T').map(row), pn = P.filter(d => ok(d) && d._sport === 'N').map(row);
       const split = pt.length >= MIN_N && pn.length >= MIN_N;
       const mt = split ? medOf(pt) : null, mn = split ? medOf(pn) : null;
-      const extra = split ? [{ med: mt, cls: 't', label: 'sport z reakcją (' + pt.length + ')' }, { med: mn, cls: 'n', label: 'bez (' + pn.length + ')' }] : [];
+      const extra = split ? [{ med: mt, cls: 't', label: 'sport z reakcją (' + pt.length + ')' }, { med: mn, cls: 'n', label: 'bez takiego sportu (' + pn.length + ')' }] : [];
       return { text: 'Mediana grupy: prosty ' + ms(med[0]) + ', dwa pola ' + ms(med[1]) + ', cztery pola ' + ms(med[2]) + '. ' + (full.length ? 'Czas rósł z każdym polem u ' + up + ' z ' + full.length + ' osób.' : '') +
-          (split ? ' Sport z reakcją: prosty ' + ms(mt[0]) + ', cztery pola ' + ms(mt[2]) + '; bez: prosty ' + ms(mn[0]) + ', cztery pola ' + ms(mn[2]) + '.' : ''),
+          (split ? ' Sport z reakcją: prosty ' + ms(mt[0]) + ', cztery pola ' + ms(mt[2]) + '; bez takiego sportu: prosty ' + ms(mn[0]) + ', cztery pola ' + ms(mn[2]) + '.' : ''),
         svg: lineChart({ xs: [0, 1, 2], labels: ['prosty (1)', '2 pola', '4 pola'], persons, med, extra, aria: 'Czas reakcji przy 1, 2 i 4 polach' }) };
   } },
   { id: 'g_odl', name: 'Odliczanie', build(P){
