@@ -182,6 +182,7 @@ input:focus,select:focus{border-color:var(--brand)}
 .chart .mdot{fill:var(--medline);stroke:var(--panel);stroke-width:2}
 .chart .mlab{fill:var(--ink);font-size:21px;font-weight:900;font-family:Lato,"Segoe UI",Arial,sans-serif}
 .chart .mkey{fill:var(--ink);font-size:16px;font-weight:700;font-family:Lato,"Segoe UI",Arial,sans-serif}
+.chart .mval{font-size:21px;font-weight:900}
 .chart .sline{fill:none;stroke-width:3;stroke-dasharray:10 7;stroke-linecap:round}
 .chart .sline.t{stroke:var(--yellow)}
 .chart .sline.n{stroke:var(--ink)}
@@ -873,15 +874,14 @@ function rankings(rows){
   return by;
 }
 const pkey = r => (r.kod || '') + '|' + String(r.nick).toLowerCase();
-// wielobój: suma miejsc; brak zadania = miejsce za ostatnim w tym zadaniu
+// wielobój: w każdym zadaniu 1. miejsce 10 pkt, 2. miejsce 9 pkt…, od 10. miejsca 1 pkt; brak zadania 0 pkt
 function allround(by){
-  const mods = Object.keys(by), people = {};
-  mods.forEach(m => by[m].forEach((r, i) => { const k = pkey(r); (people[k] = people[k] || { nick: r.nick, kod: r.kod, pl: {} }).pl[m] = i + 1; }));
-  return Object.values(people).map(p => {
-    let sum = 0, cnt = 0;
-    mods.forEach(m => { if (p.pl[m]){ sum += p.pl[m]; cnt++; } else sum += by[m].length + 1; });
-    return { nick: p.nick, kod: p.kod, sum, cnt };
-  }).sort((a, b) => a.sum - b.sum || b.cnt - a.cnt);
+  const people = {};
+  Object.keys(by).forEach(m => by[m].forEach((r, i) => {
+    const k = pkey(r), p = (people[k] = people[k] || { nick: r.nick, kod: r.kod, sum: 0, cnt: 0 });
+    p.sum += Math.max(11 - (i + 1), 1); p.cnt++;
+  }));
+  return Object.values(people).sort((a, b) => b.sum - a.sum || b.cnt - a.cnt);
 }
 
 const SEND_ERR = {
@@ -943,7 +943,9 @@ function niceTicks(lo, hi, want){
 }
 // wykres liniowy: xs = położenia (np. log2 N), persons = tablice wartości (null = brak), med = mediana na każde x
 function lineChart(o){
-  const W = 800, H = 420, L = 78, R = 150, T = 44, B = 64, PAD = 34;
+  const hasExtra = !!(o.extra && o.extra.length);
+  const W = 800, H = 420, L = 78, R = hasExtra ? 200 : 150, T = 44, B = 64, PAD = 34;
+  const lab = [];   // podpisy na prawym marginesie, rozsuwane, żeby się nie nakładały
   const vals = o.persons.flat().filter(v => v != null).concat(o.med.filter(v => v != null), (o.extra || []).flatMap(e => e.med.filter(v => v != null)), o.zero ? [0] : []);
   const ticks = niceTicks(Math.min(...vals), Math.max(...vals), 5), y0 = ticks[0], y1 = ticks[ticks.length - 1];
   const xmin = Math.min(...o.xs), xmax = Math.max(...o.xs);
@@ -963,12 +965,19 @@ function lineChart(o){
   (o.extra || []).forEach(e => {  // mediany podgrup: linia przerywana, opis na prawym marginesie
     const sp = e.med.map((v, i) => v == null ? null : [X(o.xs[i]), Y(v)]).filter(Boolean);
     if (sp.length > 1) g += '<polyline class="sline ' + e.cls + '" points="' + sp.map(q => q.join(',')).join(' ') + '"><title>' + esc(e.label) + '</title></polyline>';
-    if (sp.length) g += '<text class="skey" x="' + (W - R + 10) + '" y="' + (sp[sp.length - 1][1] + 6) + '">' + esc(e.label) + '</text>';
+    if (sp.length) lab.push({ y: sp[sp.length - 1][1], cls: 'skey', html: esc(e.label) });
   });
   const mp = o.med.map((v, i) => v == null ? null : [X(o.xs[i]), Y(v), v]).filter(Boolean);
   if (mp.length > 1) g += '<polyline class="mline" points="' + mp.map(p => p[0] + ',' + p[1]).join(' ') + '"/>';
-  mp.forEach(([x, y, v]) => { g += '<circle class="mdot" cx="' + x + '" cy="' + y + '" r="8"><title>mediana grupy: ' + v + ' ms</title></circle><text class="mlab" x="' + (x + 14) + '" y="' + (y - 12) + '">' + v + '</text>'; });
-  if (mp.length) { const [x, y] = mp[mp.length - 1]; g += '<text class="mkey" x="' + (x + 14) + '" y="' + (y + 28) + '">mediana grupy</text>'; }
+  mp.forEach(([x, y, v], i) => {
+    g += '<circle class="mdot" cx="' + x + '" cy="' + y + '" r="8"><title>mediana grupy: ' + v + ' ms</title></circle>';
+    if (hasExtra && i === mp.length - 1) lab.push({ y: y, cls: 'mkey', html: '<tspan class="mval">' + v + '</tspan> mediana grupy' });
+    else g += '<text class="mlab" x="' + (x + 14) + '" y="' + (y - 12) + '">' + v + '</text>';
+  });
+  if (mp.length && !hasExtra){ const [x, y] = mp[mp.length - 1]; g += '<text class="mkey" x="' + (x + 14) + '" y="' + (y + 28) + '">mediana grupy</text>'; }
+  lab.sort((a, b) => a.y - b.y);
+  for (let i = 1; i < lab.length; i++) if (lab[i].y - lab[i - 1].y < 26) lab[i].y = lab[i - 1].y + 26;
+  lab.forEach(l => { g += '<text class="' + l.cls + '" x="' + (W - R + 12) + '" y="' + (l.y + 6) + '">' + l.html + '</text>'; });
   return '<svg class="chart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(o.aria) + '">' + g + '</svg>';
 }
 // rozrzut jednej miary (np. koszt Stroopa): punkt na osobę, pionowa linia zera i mediany
@@ -979,7 +988,7 @@ function stripChart(o){
   let g = '';
   ticks.forEach(t => { g += '<line class="grid" x1="' + X(t) + '" x2="' + X(t) + '" y1="' + T + '" y2="' + (H - B) + '"/><text class="ax" x="' + X(t) + '" y="' + (H - B + 30) + '" text-anchor="middle">' + t + '</text>'; });
   g += '<line class="zero" x1="' + X(0) + '" x2="' + X(0) + '" y1="' + (T - 10) + '" y2="' + (H - B) + '"/>';
-  g += '<text class="ax" x="' + (X(0) - 10) + '" y="' + (T - 14) + '" text-anchor="end">' + esc(o.left) + '</text><text class="ax" x="' + (X(0) + 10) + '" y="' + (T - 14) + '">' + esc(o.right) + '</text>';
+  g += '<text class="ax" x="' + L + '" y="' + (T - 14) + '">' + esc(o.left) + '</text><text class="ax" x="' + (W - R) + '" y="' + (T - 14) + '" text-anchor="end">' + esc(o.right) + '</text>';
   g += '<text class="ax" x="' + (W - R) + '" y="' + (H - B + 58) + '" text-anchor="end">' + esc(o.unit) + '</text>';
   v.forEach(x => { g += '<circle class="pdot" cx="' + X(x) + '" cy="' + (mid + (Math.random() - 0.5) * (H - T - B - 40)) + '" r="7"><title>' + x + ' ms</title></circle>'; });
   const m = median(v);
@@ -1089,7 +1098,7 @@ function initBoard(){
       chart.innerHTML = out.svg;   // SVG z samych liczb, bez pseudonimów
     } else if (cur === 'all'){
       const ar = allround(by);
-      $('boardRule').textContent = ar.length ? 'Liczy się suma miejsc ze wszystkich zadań, jak w wieloboju. Kto nie zrobił zadania, dostaje w nim miejsce za ostatnią osobą.' : 'Jeszcze nikt nie wysłał wyniku.';
+      $('boardRule').textContent = ar.length ? 'Za każde zadanie: 1. miejsce 10 pkt, 2. miejsce 9 pkt i tak dalej, od 10. miejsca 1 pkt. Za zadanie, którego ktoś nie zrobił, 0 pkt. Wygrywa najwięcej punktów.' : 'Jeszcze nikt nie wysłał wyniku.';
       ar.slice(0, 10).forEach((p, i) => list.appendChild(li(i + 1, p.nick, p.kod, String(p.sum), 'pkt, ' + pl(p.cnt, 'zadanie', 'zadania', 'zadań'))));
     } else {
       $('boardRule').textContent = MOD[cur].name + '. Liczy się ' + MOD[cur].rule + '. Im mniej, tym lepiej.';

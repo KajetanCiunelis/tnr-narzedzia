@@ -244,3 +244,92 @@ function group_(kod, cache) {
   if (out.length < 90000) cache.put(key, out, CACHE_S);
   return ContentService.createTextOutput(out).setMimeType(ContentService.MimeType.JSON);
 }
+
+/* ================= DANE TESTOWE (grupa TEST) =================
+   wstawDaneTestowe(): 20 fikcyjnych osób z wyraźnymi efektami, żeby obejrzeć wykresy na rzutniku.
+   usunDaneTestowe(): kasuje grupę TEST razem z jej PIN-em. Inne grupy i ich PIN-y zostają bez zmian. */
+const KOD_TEST = 'TEST';
+
+function kodPary_(x) {
+  const i = x.indexOf('=');
+  return i < 0 ? '' : x.slice(i + 1).split(':')[0].replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+}
+
+function wstawDaneTestowe() {
+  const props = PropertiesService.getScriptProperties(), pins = pins_();
+  let pin = Object.keys(pins).filter(function (p) { return pins[p].kod === KOD_TEST; })[0];
+  if (!pin) {
+    const pary = (props.getProperty('PINY') || '').split(',').filter(function (x) { return x.trim(); });
+    do { pin = String(100000 + Math.floor(Math.random() * 900000)); } while (pins[pin]);
+    pary.push(pin + '=' + KOD_TEST + ':dane testowe');
+    props.setProperty('PINY', pary.join(','));
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let tab = ss.getSheetByName('piny');
+    if (!tab) { tab = ss.insertSheet('piny'); tab.appendRow(['grupa', 'PIN', 'opis', 'link dla studentów (QR)', 'link na rzutnik']); }
+    tab.appendRow([KOD_TEST, "'" + pin, 'dane testowe', ADRES_STRONY + '?kod=' + KOD_TEST + '&pin=' + pin, ADRES_STRONY + '?tablica&kod=' + KOD_TEST]);
+  }
+  const R = function (a, b) { return a + Math.random() * (b - a); }, r0 = Math.round;
+  const med = function (a) { const s = a.slice().sort(function (x, y) { return x - y; }), m = s.length >> 1; return s.length % 2 ? s[m] : r0((s[m - 1] + s[m]) / 2); };
+  const avg = function (a) { return a.reduce(function (x, y) { return x + y; }, 0) / a.length; };
+  const sd = function (a) { const m = avg(a); return Math.sqrt(a.reduce(function (s, x) { return s + (x - m) * (x - m); }, 0) / (a.length - 1)); };
+  const five = function (m, spread) { const a = []; for (let k = 0; k < 5; k++) a.push(r0(m + R(-spread, spread))); return a; };
+  const rows = [], now = new Date();
+  for (let i = 1; i <= 20; i++) {
+    const nick = 'test' + (i < 10 ? '0' : '') + i, sport = i % 2 ? 'T' : 'N';
+    const dev = R(-30, 40) + (sport === 'T' ? -12 : 12);     // osoby trenujące sport z reakcją trochę szybsze
+    const add = function (mod, score, disp, det) {
+      rows.push([now, KOD_TEST, nick, sport, mod, r0(score), disp, JSON.stringify(det_(det, 0)), 'dane testowe', 'dane testowe']);
+    };
+    const rt = function (mod, m) {
+      const t = five(m, 25), md = med(t), err = Math.random() < 0.2 ? 1 : 0;
+      add(mod, md + 100 * err, md + ' ms', { med: md, rts: t, err: err });
+      return md;
+    };
+    const prosty = rt('prosty', 260 + dev);
+    rt('wybor2', 260 + dev + R(30, 60));
+    rt('wybor4', 260 + dev + R(80, 130));
+    rt('odliczanie', prosty - R(-15, 55));                   // u większości przewidywanie skraca reakcję
+    const e = five(R(-20, 30), 50), ae = r0(avg(e.map(Math.abs)));
+    add('rytm', ae, 'AE ' + ae + ' ms', { ae: ae, ce: r0(avg(e)), ve: r0(sd(e)), e: e, err: 0 });
+    const rec = [0, 1, 2, 0, 1, 2].map(function (sp) { return { sp: sp, e: r0([-40, -5, 30][sp] + R(-35, 35)) }; });
+    const es = rec.map(function (x) { return x.e; }), aeC = r0(avg(es.map(Math.abs)));
+    add('cel', aeC, 'AE ' + aeC + ' ms', { ae: aeC, ce: r0(avg(es)), rec: rec, err: 0 });
+    const g = five(300 + dev, 30), gm = med(g), comm = Math.random() < 0.3 ? 1 : 0;
+    add('gonogo', gm + 100 * comm, gm + ' ms', { med: gm, rts: g, comm: comm, omis: 0, prem: 0 });
+    const base = R(330, 450) + dev, sl = R(15, 35);
+    const recS = [6, 12, 24, 6, 12, 24].map(function (n) { return { n: n, rt: r0(base + sl * n + R(-40, 40)) }; });
+    const sm = med(recS.map(function (x) { return x.rt; }));
+    add('szukanie', sm, sm + ' ms', { med: sm, slope: r0(sl), rec: recS, err: 0 });
+    const mc = r0(R(520, 640) + dev), cost = r0(R(-20, 150)), mi = mc + cost, st = r0((mc + mi) / 2);
+    add('stroop', st, st + ' ms', { med: st, mc: mc, mi: mi, cost: cost, err: 0, early: 0 });
+  }
+  const sh = sheet_();
+  sh.getRange(sh.getLastRow() + 1, 1, rows.length, rows[0].length).setValues(rows);
+  CacheService.getScriptCache().removeAll(['b_' + KOD_TEST, 'g_' + KOD_TEST, 'b_', 'g_']);
+  Logger.log('Dodano ' + rows.length + ' wierszy (20 osób) w grupie ' + KOD_TEST + '. Rzutnik: ' + ADRES_STRONY + '?tablica&kod=' + KOD_TEST + '&pin=' + pin);
+}
+
+function usunDaneTestowe() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  // usuwa wiersze z danym kodem w kolumnie kol (0 = pierwsza), od dołu, całymi blokami
+  const usun = function (sh, kol) {
+    if (!sh) return 0;
+    const vals = sh.getDataRange().getValues();
+    let n = 0, r = vals.length - 1;
+    while (r >= 1) {
+      if (String(vals[r][kol]) !== KOD_TEST) { r--; continue; }
+      let start = r;
+      while (start - 1 >= 1 && String(vals[start - 1][kol]) === KOD_TEST) start--;
+      sh.deleteRows(start + 1, r - start + 1);
+      n += r - start + 1; r = start - 1;
+    }
+    return n;
+  };
+  const n = usun(ss.getSheetByName(SHEET), 1);
+  usun(ss.getSheetByName('piny'), 0);
+  const props = PropertiesService.getScriptProperties();
+  const pary = (props.getProperty('PINY') || '').split(',').filter(function (x) { return x.trim() && kodPary_(x) !== KOD_TEST; });
+  props.setProperty('PINY', pary.join(','));
+  CacheService.getScriptCache().removeAll(['b_' + KOD_TEST, 'g_' + KOD_TEST, 'b_', 'g_']);
+  Logger.log('Usunięto ' + n + ' wierszy grupy ' + KOD_TEST + ' i jej PIN. Pozostałe grupy bez zmian.');
+}
