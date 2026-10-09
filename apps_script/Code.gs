@@ -40,7 +40,7 @@ function sheet_() {
   let sh = ss.getSheetByName(SHEET);
   if (!sh) {
     sh = ss.insertSheet(SHEET);
-    sh.appendRow(['czas', 'kod', 'nick', 'sport', 'modul', 'wynik', 'opis', 'szczegoly', 'urzadzenie', 'opis_pinu']);
+    sh.appendRow(['czas', 'kod', 'nick', 'sport', 'modul', 'wynik', 'opis', 'szczegoly', 'urzadzenie', 'opis_pinu', 'runda']);
     sh.setFrozenRows(1);
   }
   return sh;
@@ -142,6 +142,7 @@ function json_(o) {
 function doPost(e) {
   try {
     const d = JSON.parse(e.postData.contents);
+    if (d.akcja) return admin_(d);
     const pins = pins_();
     if (!Object.keys(pins).length) return json_({ ok: false, code: 'off', error: 'tablica wyłączona' });
     const nick = clean_(d.nick, 16);
@@ -167,7 +168,10 @@ function doPost(e) {
       if (!grupa) { bump_(cache, 'zly_pin', 600); return json_({ ok: false, code: 'pin', error: 'zły PIN' }); }
       if (bump_(cache, 'm_' + Math.floor(Date.now() / 60000), 120) > LIMIT_MINUTA) return json_({ ok: false, code: 'limit', error: 'limit na minutę' });
       if (bump_(cache, 'o_' + kod + '|' + nick.toLowerCase(), 600) > LIMIT_OSOBA) return json_({ ok: false, code: 'limit', error: 'limit na osobę' });
-      rows.forEach(function (r) { r[1] = kod; r.push(grupa.opis); });
+      const nr = runda_(kod).n;
+      rows.forEach(function (r) { r[1] = kod; r.push(grupa.opis, nr); });
+      const shr = sheet_();
+      if (!shr.getRange(1, 11).getValue()) shr.getRange(1, 11).setValue('runda');
       const sh = sheet_();
       sh.getRange(sh.getLastRow() + 1, 1, rows.length, rows[0].length).setValues(rows);
     } finally {
@@ -191,15 +195,15 @@ function doGet(e) {
       if (pin) bump_(cache, 'zly_pin', 600);   // pusty PIN (np. stara wersja strony) nie zużywa limitu
       return json_({ ok: false, code: 'pin', error: 'zły PIN' });
     }
-    const kod = grupa.kod;
-    if (p.tryb === 'grupa') return group_(kod, cache);
+    const kod = grupa.kod, rd = runda_(kod);
+    if (p.tryb === 'grupa') return group_(kod, cache, rd);
     const key = 'b_' + kod;
     const hit = cache.get(key);
     if (hit) return ContentService.createTextOutput(hit).setMimeType(ContentService.MimeType.JSON);
 
     const vals = sheet_().getDataRange().getValues();
     vals.shift();
-    const since = Date.now() - DAYS * 864e5;
+    const since = Math.max(Date.now() - DAYS * 864e5, rd.od);
     const best = {};
     vals.forEach(function (r) {
       const czas = r[0], k = String(r[1] || ''), nick = String(r[2] || ''), mod = String(r[4] || ''), score = Number(r[5]), disp = String(r[6] || '');
@@ -209,7 +213,7 @@ function doGet(e) {
       const id = k + '|' + nick.toLowerCase() + '|' + mod;
       if (!best[id] || score < best[id].score) best[id] = { kod: k, nick: nick, mod: mod, score: score, disp: disp };
     });
-    const out = JSON.stringify({ ok: true, kod: kod, rows: Object.keys(best).map(function (id) { return best[id]; }) });
+    const out = JSON.stringify({ ok: true, kod: kod, runda: rd.n, rows: Object.keys(best).map(function (id) { return best[id]; }) });
     if (out.length < 90000) cache.put(key, out, CACHE_S);
     return ContentService.createTextOutput(out).setMimeType(ContentService.MimeType.JSON);
   } catch (err) {
@@ -218,13 +222,13 @@ function doGet(e) {
 }
 
 // ostatnie podejście każdej osoby w każdym zadaniu; osoba jako numer, bez pseudonimu
-function group_(kod, cache) {
+function group_(kod, cache, rd) {
   const key = 'g_' + kod;
   const hit = cache.get(key);
   if (hit) return ContentService.createTextOutput(hit).setMimeType(ContentService.MimeType.JSON);
   const vals = sheet_().getDataRange().getValues();
   vals.shift();
-  const since = Date.now() - DAYS * 864e5;
+  const since = Math.max(Date.now() - DAYS * 864e5, rd.od);
   const last = {}, ids = {};
   vals.forEach(function (r) {
     const t = new Date(r[0]).getTime(), k = String(r[1] || ''), nick = String(r[2] || '').toLowerCase(), mod = String(r[4] || '');
@@ -240,7 +244,7 @@ function group_(kod, cache) {
     if (!(x.who in ids)) ids[x.who] = Object.keys(ids).length;
     rows.push({ p: ids[x.who], mod: x.mod, det: det, s: (x.s === 'T' || x.s === 'N') ? x.s : '' });
   });
-  const out = JSON.stringify({ ok: true, kod: kod, rows: rows });
+  const out = JSON.stringify({ ok: true, kod: kod, runda: rd.n, rows: rows });
   if (out.length < 90000) cache.put(key, out, CACHE_S);
   return ContentService.createTextOutput(out).setMimeType(ContentService.MimeType.JSON);
 }
@@ -330,6 +334,83 @@ function usunDaneTestowe() {
   const props = PropertiesService.getScriptProperties();
   const pary = (props.getProperty('PINY') || '').split(',').filter(function (x) { return x.trim() && kodPary_(x) !== KOD_TEST; });
   props.setProperty('PINY', pary.join(','));
+  props.setProperty('PINY_ADMIN', (props.getProperty('PINY_ADMIN') || '').split(',').filter(function (x) { return x.trim() && kodPary_(x) !== KOD_TEST; }).join(','));
+  props.deleteProperty('RUNDY_' + KOD_TEST);
   CacheService.getScriptCache().removeAll(['b_' + KOD_TEST, 'g_' + KOD_TEST, 'b_', 'g_']);
   Logger.log('Usunięto ' + n + ' wierszy grupy ' + KOD_TEST + ' i jej PIN. Pozostałe grupy bez zmian.');
+}
+
+/* ================= RUNDY I PIN PROWADZĄCEGO =================
+   „Nowa runda” na tablicy: tablica i wykresy liczą tylko wyniki od początku bieżącej rundy.
+   Nic nie jest kasowane: stare wiersze zostają w arkuszu (kolumna „runda”), rundę można cofnąć.
+   Do zmiany rundy potrzebny jest PIN prowadzącego (PINY_ADMIN: 'pin=KOD,…'), którego studenci nie znają.
+   PIN-y prowadzących tworzy dodajPinyProwadzacych() i wpisuje je do kolumny F arkusza „piny”. */
+
+// historia rund grupy: [{n:1, od:0}, {n:2, od:<ms>}, …]; ostatni element = bieżąca runda
+function rundy_(kod) {
+  try {
+    const a = JSON.parse(PropertiesService.getScriptProperties().getProperty('RUNDY_' + kod) || '[]');
+    if (Array.isArray(a) && a.length) return a;
+  } catch (err) {}
+  return [{ n: 1, od: 0 }];
+}
+function runda_(kod) { const a = rundy_(kod); return a[a.length - 1]; }
+
+// PINY_ADMIN = "915302=WT,448190=MO" → { '915302': 'WT', '448190': 'MO' }
+function adminPins_() {
+  const m = {};
+  (PropertiesService.getScriptProperties().getProperty('PINY_ADMIN') || '').split(',').forEach(function (x) {
+    const i = x.indexOf('='), pin = i < 0 ? '' : x.slice(0, i).trim(), kod = kodPary_(x);
+    if (pin && kod) m[pin] = kod;
+  });
+  return m;
+}
+
+// POST {akcja: 'nowa_runda' | 'cofnij_runde', pin: <PIN grupy>, adminPin: <PIN prowadzącego>}
+function admin_(d) {
+  const cache = CacheService.getScriptCache();
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    if (Number(cache.get('zly_pin') || 0) >= LIMIT_ZLY_PIN) return json_({ ok: false, code: 'locked', error: 'za dużo błędnych PIN-ów' });
+    const grupa = pins_()[String(d.pin == null ? '' : d.pin).trim()];
+    const kodAdm = adminPins_()[String(d.adminPin == null ? '' : d.adminPin).trim()];
+    if (!grupa || !kodAdm || kodAdm !== grupa.kod) { bump_(cache, 'zly_pin', 600); return json_({ ok: false, code: 'admin', error: 'zły PIN prowadzącego' }); }
+    const kod = grupa.kod, a = rundy_(kod);
+    if (d.akcja === 'nowa_runda') a.push({ n: a[a.length - 1].n + 1, od: Date.now() });
+    else if (d.akcja === 'cofnij_runde') { if (a.length > 1) a.pop(); }
+    else return json_({ ok: false, error: 'nieznana akcja' });
+    PropertiesService.getScriptProperties().setProperty('RUNDY_' + kod, JSON.stringify(a.slice(-50)));
+    cache.removeAll(['b_' + kod, 'g_' + kod, 'b_', 'g_']);
+    return json_({ ok: true, kod: kod, runda: a[a.length - 1].n });
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// Uruchom z edytora: każda grupa z PINY bez PIN-u prowadzącego dostaje go (6 cyfr, różny od PIN-ów grup).
+// Istniejące PIN-y prowadzących zostają. Wpisuje je do kolumny F arkusza „piny”.
+function dodajPinyProwadzacych() {
+  const props = PropertiesService.getScriptProperties(), pins = pins_(), adm = adminPins_();
+  const zKodu = {}, used = {};
+  Object.keys(adm).forEach(function (p) { zKodu[adm[p]] = p; used[p] = 1; });
+  Object.keys(pins).forEach(function (p) { used[p] = 1; });
+  const pary = (props.getProperty('PINY_ADMIN') || '').split(',').filter(function (x) { return x.trim(); });
+  const nowe = [];
+  Object.keys(pins).forEach(function (p) {
+    const kod = pins[p].kod;
+    if (zKodu[kod]) return;
+    let a;
+    do { a = String(100000 + Math.floor(Math.random() * 900000)); } while (used[a]);
+    used[a] = 1; zKodu[kod] = a; pary.push(a + '=' + kod); nowe.push(kod);
+  });
+  props.setProperty('PINY_ADMIN', pary.join(','));
+  const tab = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('piny');
+  if (tab) {
+    tab.getRange(1, 6).setValue('PIN prowadzącego (nowa runda)');
+    const vals = tab.getDataRange().getValues();
+    for (let r = 1; r < vals.length; r++) { const k = String(vals[r][0]); if (zKodu[k]) tab.getRange(r + 1, 6).setValue("'" + zKodu[k]); }
+    tab.autoResizeColumns(1, 6);
+  }
+  Logger.log(nowe.length ? 'PIN prowadzącego dla grup: ' + nowe.join(', ') + ' (kolumna F w arkuszu „piny”)' : 'Wszystkie grupy mają już PIN prowadzącego.');
 }

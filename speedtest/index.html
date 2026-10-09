@@ -317,7 +317,19 @@ body.projector .boardRule{font-size:22px}
   <div class="row boardMeta">
     <span id="boardStamp"></span>
     <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="boardAuto" checked style="width:auto"> przełączaj zakładki</label>
+    <button class="ghost sm" type="button" id="roundBtn" hidden>Nowa runda (wyczyść tablicę)</button>
   </div>
+  <form class="card" id="roundForm" hidden>
+    <div class="eyebrow">Nowa runda dla grupy <span id="roundKod"></span></div>
+    <p class="sub" style="margin:0">Tablica i wykresy zaczną od zera. Dotychczasowe wyniki zostają w arkuszu, a rundę można cofnąć.</p>
+    <div class="form"><label class="full">PIN prowadzącego<input id="roundPin" type="password" inputmode="numeric" autocomplete="off" maxlength="12"></label></div>
+    <div class="row">
+      <button class="primary" type="submit">Zacznij nową rundę</button>
+      <button class="ghost" type="button" id="roundUndo">Cofnij ostatnią rundę</button>
+      <button class="ghost" type="button" id="roundCancel">Zamknij</button>
+    </div>
+    <div id="roundMsg" aria-live="polite"></div>
+  </form>
 </section>
 
 </div>
@@ -859,9 +871,14 @@ const api = {
   // odczyt tylko z PIN-em; grupę wyznacza PIN → { kod, rows }
   async board(pin){
     const r = await fetch(ENDPOINT + '?pin=' + encodeURIComponent(pin || '') + '&_=' + Date.now());
-    const j = await r.json(); if (!j.ok){ const e = new Error(j.error || 'błąd serwera'); e.code = j.code; throw e; } return { kod: j.kod || '', rows: j.rows || [] };
+    const j = await r.json(); if (!j.ok){ const e = new Error(j.error || 'błąd serwera'); e.code = j.code; throw e; } return { kod: j.kod || '', runda: j.runda || 0, rows: j.rows || [] };
   },
   // wyniki do wykresów: ostatnie podejście każdej osoby, bez pseudonimów (p = numer osoby)
+  // nowa runda / cofnięcie rundy: PIN grupy + PIN prowadzącego
+  async admin(akcja, pin, adminPin){
+    const r = await fetch(ENDPOINT, { method: 'POST', body: JSON.stringify({ akcja, pin, adminPin }) });
+    const j = await r.json(); if (!j.ok){ const e = new Error(j.error || 'błąd serwera'); e.code = j.code; throw e; } return j;
+  },
   async group(pin){
     const r = await fetch(ENDPOINT + '?tryb=grupa&pin=' + encodeURIComponent(pin || '') + '&_=' + Date.now());
     const j = await r.json(); if (!j.ok){ const e = new Error(j.error || 'błąd serwera'); e.code = j.code; throw e; } return j.rows || [];
@@ -1142,7 +1159,8 @@ function initBoard(){
       if (!started){ started = true; setInterval(refresh, 15000); setInterval(autoTab, 12000); }
       by = rankings(b.rows);
       const m = {}; grp.forEach(r => { if (MOD[r.mod] && r.det){ const o = (m[r.p] = m[r.p] || {}); o[r.mod] = r.det; if (r.s) o._sport = r.s; } }); P = Object.values(m);
-      $('boardStamp').textContent = 'Zaktualizowano o ' + new Date().toLocaleTimeString('pl-PL') + ', osób: ' + P.length;
+      $('boardStamp').textContent = 'Zaktualizowano o ' + new Date().toLocaleTimeString('pl-PL') + ', osób: ' + P.length + (b.runda > 1 ? ', runda ' + b.runda : '');
+      $('roundBtn').hidden = false;
     } catch (e){
       if (e.code === 'pin' || e.code === 'locked'){
         pin = ''; if (KOD_LINKU) ls.del(pkey(KOD_LINKU));
@@ -1154,6 +1172,28 @@ function initBoard(){
     }
     draw();
   }
+  // nowa runda: tylko z PIN-em prowadzącego (studenci znają tylko PIN grupy)
+  const roundMsg = (t, ok) => { $('roundMsg').className = ok ? 'ok' : 'err'; $('roundMsg').textContent = t; };
+  $('roundBtn').addEventListener('click', () => {
+    $('roundForm').hidden = false; $('roundKod').textContent = kod || ''; $('roundMsg').textContent = '';
+    $('boardAuto').checked = false; $('roundPin').focus();
+  });
+  $('roundCancel').addEventListener('click', () => { $('roundForm').hidden = true; $('roundPin').value = ''; });
+  async function roundAction(akcja){
+    const ap = $('roundPin').value.trim();
+    if (!ap){ roundMsg('Wpisz PIN prowadzącego.'); return; }
+    try {
+      const j = await api.admin(akcja, pin, ap);
+      $('roundPin').value = '';
+      roundMsg(akcja === 'nowa_runda' ? 'Zaczęła się runda ' + j.runda + '. Tablica jest pusta, poprzednie wyniki zostały w arkuszu.' : 'Wrócono do rundy ' + j.runda + '.', true);
+      setTimeout(() => { $('roundForm').hidden = true; }, 4000);
+      refresh();
+    } catch (e){
+      roundMsg(e.code === 'admin' ? 'Nieprawidłowy PIN prowadzącego.' : e.code === 'locked' ? 'Za dużo prób z błędnym PIN-em. Spróbuj ponownie za 10 minut.' : 'Nie udało się (' + e.message + '). Spróbuj ponownie.');
+    }
+  }
+  $('roundForm').addEventListener('submit', ev => { ev.preventDefault(); roundAction('nowa_runda'); });
+  $('roundUndo').addEventListener('click', () => roundAction('cofnij_runde'));
   refresh();
 }
 
