@@ -288,7 +288,7 @@ body.projector .boardRule{font-size:22px}
     <p class="sub" style="margin:0" id="sendInfo">Wpisz pseudonim (nie imię i nazwisko) i PIN od prowadzącego.</p>
     <div class="form">
       <label class="full">Pseudonim<input id="fNick" maxlength="16" autocomplete="off" placeholder="np. Kangur7"></label>
-      <label class="full">Trenujesz sport, w którym reagujesz na piłkę lub rywala?<select id="fSport"><option value="">nie podaję</option><option value="T">tak</option><option value="N">nie</option></select></label>
+      <label class="full">Czy sport, który trenujesz, wymaga szybkiej reakcji? (obowiązkowe)<select id="fSport" required><option value="">wybierz…</option><option value="T">tak</option><option value="N">nie</option><option value="B">nie trenuję żadnego sportu</option></select></label>
       <label>PIN grupy<input id="fPin" maxlength="12" inputmode="numeric" autocomplete="off" placeholder="od prowadzącego"></label>
     </div>
     <div class="row"><button class="primary" id="sendBtn">Wyślij na tablicę</button><a id="boardLink" href="#" target="_blank" rel="noopener">pełna tablica</a></div>
@@ -916,11 +916,12 @@ $('sendBtn').addEventListener('click', async () => {
   if (!nick){ out.className = 'err'; out.textContent = 'Wpisz pseudonim.'; return; }
   const wyniki = MODS.filter(m => S.res[m.id]).map(m => ({ mod: m.id, score: S.res[m.id].score, disp: S.res[m.id].disp, det: S.res[m.id].det }));
   if (!wyniki.length){ out.className = 'err'; out.textContent = 'Najpierw zrób przynajmniej jedno zadanie.'; return; }
+  if (!sport){ out.className = 'err'; out.textContent = 'Zaznacz, czy sport, który trenujesz, wymaga szybkiej reakcji.'; $('fSport').focus(); return; }
   if (!pin){ out.className = 'err'; out.textContent = 'Wpisz PIN od prowadzącego. Bez niego wyniki zostają tylko na Twoim telefonie.'; return; }
   S.nick = nick; S.sport = sport; S.pin = pin; save();
   $('sendBtn').disabled = true; out.className = ''; out.textContent = 'Wysyłam…';
   try {
-    const j = await api.send({ nick, kod, sport, pin, wyniki, ua: navigator.userAgent.slice(0, 80) });
+    const j = await api.send({ nick, kod, sport: sport === 'B' ? 'N' : sport, pin, wyniki, ua: navigator.userAgent.slice(0, 80) });
     if (j.kod){ S.kod = j.kod; save(); updateBoardLink(); }
     out.className = 'ok'; out.textContent = 'Wysłano wyniki: ' + j.n + (S.kod ? ', grupa ' + S.kod : '') + '.';
     showMyPlaces(nick, S.kod || '');
@@ -1025,13 +1026,13 @@ const CHARTS = [
       const medOf = ps => ks.map((k, i) => { const x = ps.map(a => a[i]).filter(v => v != null); return x.length ? median(x) : null; });
       const med = medOf(persons);
       const full = persons.filter(a => a.every(v => v != null)), up = full.filter(a => a[0] < a[1] && a[1] < a[2]).length;
-      // podgrupy: sport z reakcją na bodziec (T) vs bez (N); pokazujemy, gdy każda ma co najmniej MIN_N osób
+      // podgrupy: sport wymagający szybkiej reakcji (T) vs pozostali (N, w tym bez sportu); gdy każda ma co najmniej MIN_N osób
       const pt = P.filter(d => ok(d) && d._sport === 'T').map(row), pn = P.filter(d => ok(d) && d._sport === 'N').map(row);
       const split = pt.length >= MIN_N && pn.length >= MIN_N;
       const mt = split ? medOf(pt) : null, mn = split ? medOf(pn) : null;
-      const extra = split ? [{ med: mt, cls: 't', label: 'sport z reakcją (' + pt.length + ')' }, { med: mn, cls: 'n', label: 'bez takiego sportu (' + pn.length + ')' }] : [];
+      const extra = split ? [{ med: mt, cls: 't', label: 'szybka reakcja w sporcie (' + pt.length + ')' }, { med: mn, cls: 'n', label: 'pozostali (' + pn.length + ')' }] : [];
       return { text: 'Mediana grupy: prosty ' + ms(med[0]) + ', dwa pola ' + ms(med[1]) + ', cztery pola ' + ms(med[2]) + '. ' + (full.length ? 'Czas rósł z każdym polem u ' + up + ' z ' + full.length + ' osób.' : '') +
-          (split ? ' Sport z reakcją: prosty ' + ms(mt[0]) + ', cztery pola ' + ms(mt[2]) + '; bez takiego sportu: prosty ' + ms(mn[0]) + ', cztery pola ' + ms(mn[2]) + '.' : ''),
+          (split ? ' Sport wymagający szybkiej reakcji: prosty ' + ms(mt[0]) + ', cztery pola ' + ms(mt[2]) + '; pozostali: prosty ' + ms(mn[0]) + ', cztery pola ' + ms(mn[2]) + '.' : ''),
         svg: lineChart({ xs: [0, 1, 2], labels: ['prosty (1)', '2 pola', '4 pola'], persons, med, extra, aria: 'Czas reakcji przy 1, 2 i 4 polach' }) };
   } },
   { id: 'g_odl', name: 'Odliczanie', build(P){
