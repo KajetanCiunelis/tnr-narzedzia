@@ -1106,13 +1106,20 @@ function initBoard(){
       by[cur].slice(0, 10).forEach((r, i) => list.appendChild(li(i + 1, r.nick, r.kod, r.disp || String(r.score), r.disp && Math.round(r.score) !== parseInt(r.disp.replace(/\D+/, ''), 10) ? '(z karą ' + Math.round(r.score) + ')' : '')));
     }
   }
-  // PIN: z linku (potem znika z paska adresu, bo to idzie na rzutnik), zapamiętany na tym komputerze albo z formularza
-  const PKEY = 'tnr_tablica_pin';
+  // PIN: z linku (potem znika z paska adresu, bo to idzie na rzutnik), zapamiętany na tym komputerze albo z formularza.
+  // Zapamiętany osobno dla każdej grupy, żeby tablica WT nie pokazała grupy, której PIN wpisano wcześniej.
+  const KOD_LINKU = kod, PKEY_OLD = 'tnr_tablica_pin';
+  const pkey = k => 'tnr_tablica_pin_' + k;
+  const ls = { get: k => { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } },
+               set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} },
+               del: k => { try { localStorage.removeItem(k); } catch (e) {} } };
   let pin = (Q.get('pin') || '').trim(), started = false;
   if (Q.get('pin')){
     try { const u = new URL(location.href); u.searchParams.delete('pin'); history.replaceState(null, '', u.pathname + '?' + u.searchParams.toString().replace(/tablica=(&|$)/, 'tablica$1')); } catch (e) {}
   }
-  if (!pin){ try { pin = localStorage.getItem(PKEY) || ''; } catch (e) {} }
+  if (!pin && KOD_LINKU) pin = ls.get(pkey(KOD_LINKU));
+  if (!pin){ pin = ls.get(PKEY_OLD); }   // stary wspólny klucz: jednorazowo, sprawdzany niżej zgodnością grupy
+  ls.del(PKEY_OLD);
   function askPin(m){
     $('boardPin').hidden = false; $('bPinMsg').textContent = m || '';
     $('boardTabs').textContent = ''; $('boardRule').textContent = ''; $('boardList').textContent = ''; $('boardChart').hidden = true; $('boardStamp').textContent = '';
@@ -1124,7 +1131,12 @@ function initBoard(){
     if (!pin){ if ($('boardPin').hidden) askPin(); return; }
     try {
       const [b, grp] = await Promise.all([api.board(pin), api.group(pin)]);
-      try { localStorage.setItem(PKEY, pin); } catch (e) {}
+      if (KOD_LINKU && b.kod && b.kod !== KOD_LINKU){   // PIN innej grupy: nie pokazujemy cudzych danych
+        pin = '';
+        askPin('Ten PIN należy do grupy ' + b.kod + '. Wpisz PIN grupy ' + KOD_LINKU + '.');
+        return;
+      }
+      if (b.kod) ls.set(pkey(b.kod), pin);
       $('boardPin').hidden = true; $('bPin').value = '';
       if (b.kod && b.kod !== kod){ kod = b.kod; setTitle(kod); }
       if (!started){ started = true; setInterval(refresh, 15000); setInterval(autoTab, 12000); }
@@ -1133,7 +1145,7 @@ function initBoard(){
       $('boardStamp').textContent = 'Zaktualizowano o ' + new Date().toLocaleTimeString('pl-PL') + ', osób: ' + P.length;
     } catch (e){
       if (e.code === 'pin' || e.code === 'locked'){
-        pin = ''; try { localStorage.removeItem(PKEY); } catch (_) {}
+        pin = ''; if (KOD_LINKU) ls.del(pkey(KOD_LINKU));
         askPin(e.code === 'locked' ? 'Za dużo prób z błędnym PIN-em. Spróbuj ponownie za 10 minut.' : 'Nieprawidłowy PIN.');
         return;
       }
