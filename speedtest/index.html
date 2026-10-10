@@ -317,6 +317,7 @@ body.projector .boardRule{font-size:22px}
   <div class="row boardMeta">
     <span id="boardStamp"></span>
     <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="boardAuto" checked style="width:auto"> przełączaj zakładki</label>
+    <label id="rundaBox" style="display:flex;gap:6px;align-items:center" hidden>runda <select id="boardRunda" style="width:auto;padding:5px 8px;font-size:inherit"></select></label>
     <button class="ghost sm" type="button" id="pinBtn">Wpisz PIN</button>
     <button class="ghost sm" type="button" id="roundBtn" hidden>Nowa runda (wyczyść tablicę)</button>
   </div>
@@ -869,10 +870,10 @@ const api = {
     const r = await fetch(ENDPOINT, { method: 'POST', body: JSON.stringify(payload) });
     const j = await r.json(); if (!j.ok){ const e = new Error(j.error || 'błąd serwera'); e.code = j.code; throw e; } return j;
   },
-  // odczyt tylko z PIN-em; grupę wyznacza PIN → { kod, rows }
-  async board(pin){
-    const r = await fetch(ENDPOINT + '?pin=' + encodeURIComponent(pin || '') + '&_=' + Date.now());
-    const j = await r.json(); if (!j.ok){ const e = new Error(j.error || 'błąd serwera'); e.code = j.code; throw e; } return { kod: j.kod || '', runda: j.runda || 0, rows: j.rows || [] };
+  // odczyt tylko z PIN-em; grupę wyznacza PIN → { kod, rows }; runda: '' = bieżąca, numer albo 'wszystkie'
+  async board(pin, runda){
+    const r = await fetch(ENDPOINT + '?pin=' + encodeURIComponent(pin || '') + (runda ? '&runda=' + encodeURIComponent(runda) : '') + '&_=' + Date.now());
+    const j = await r.json(); if (!j.ok){ const e = new Error(j.error || 'błąd serwera'); e.code = j.code; throw e; } return { kod: j.kod || '', runda: j.runda || 0, widok: j.widok || '', rundy: j.rundy || [], rows: j.rows || [] };
   },
   // wyniki do wykresów: ostatnie podejście każdej osoby, bez pseudonimów (p = numer osoby)
   // nowa runda / cofnięcie rundy: PIN grupy + PIN prowadzącego
@@ -880,8 +881,8 @@ const api = {
     const r = await fetch(ENDPOINT, { method: 'POST', body: JSON.stringify({ akcja, pin, adminPin }) });
     const j = await r.json(); if (!j.ok){ const e = new Error(j.error || 'błąd serwera'); e.code = j.code; throw e; } return j;
   },
-  async group(pin){
-    const r = await fetch(ENDPOINT + '?tryb=grupa&pin=' + encodeURIComponent(pin || '') + '&_=' + Date.now());
+  async group(pin, runda){
+    const r = await fetch(ENDPOINT + '?tryb=grupa&pin=' + encodeURIComponent(pin || '') + (runda ? '&runda=' + encodeURIComponent(runda) : '') + '&_=' + Date.now());
     const j = await r.json(); if (!j.ok){ const e = new Error(j.error || 'błąd serwera'); e.code = j.code; throw e; } return j.rows || [];
   }
 };
@@ -1133,6 +1134,7 @@ function initBoard(){
                set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} },
                del: k => { try { localStorage.removeItem(k); } catch (e) {} } };
   let pin = (Q.get('pin') || '').trim(), started = false, looping = false, busy = false;
+  let widok = '', rundySig = '';   // widok: '' = bieżąca runda, numer rundy albo 'wszystkie'
   if (Q.get('pin')){
     if (KOD_LINKU && pin) ls.set(pkey(KOD_LINKU), pin);   // od razu, bo z paska adresu zaraz zniknie; zły PIN skasuje refresh()
     try { const u = new URL(location.href); u.searchParams.delete('pin'); history.replaceState(null, '', u.pathname + '?' + u.searchParams.toString().replace(/tablica=(&|$)/, 'tablica$1')); } catch (e) {}
@@ -1152,10 +1154,10 @@ function initBoard(){
     if (!looping){ looping = true; setInterval(refresh, 15000); setInterval(autoTab, 12000); }   // ponawia też wtedy, gdy pierwsze wczytanie się nie uda
     if (busy) return;   // Apps Script bywa wolny: zapytania się nie nakładają
     busy = true;
-    const p = pin;
+    const p = pin, w = widok;
     try {
-      const [b, grp] = await Promise.all([api.board(p), api.group(p)]);
-      if (p !== pin) return;   // w międzyczasie wpisano inny PIN albo otwarto formularz
+      const [b, grp] = await Promise.all([api.board(p, w), api.group(p, w)]);
+      if (p !== pin || w !== widok) return;   // w międzyczasie wpisano inny PIN, otwarto formularz albo wybrano inną rundę
       if (KOD_LINKU && b.kod && b.kod !== KOD_LINKU){   // PIN innej grupy: nie pokazujemy cudzych danych
         pin = '';
         askPin('Ten PIN należy do grupy ' + b.kod + '. Wpisz PIN grupy ' + KOD_LINKU + '.');
@@ -1167,10 +1169,12 @@ function initBoard(){
       started = true;
       by = rankings(b.rows);
       const m = {}; grp.forEach(r => { if (MOD[r.mod] && r.det){ const o = (m[r.p] = m[r.p] || {}); o[r.mod] = r.det; if (r.s) o._sport = r.s; } }); P = Object.values(m);
-      $('boardStamp').textContent = 'Zaktualizowano o ' + new Date().toLocaleTimeString('pl-PL') + ', osób: ' + P.length + (b.runda > 1 ? ', runda ' + b.runda : '');
+      drawRundy(b);
+      const rTxt = b.widok === 'wszystkie' ? ', wszystkie rundy' : b.widok && b.widok !== String(b.runda) ? ', runda ' + b.widok + ' (bieżąca: ' + b.runda + ')' : b.runda > 1 ? ', runda ' + b.runda : '';
+      $('boardStamp').textContent = 'Zaktualizowano o ' + new Date().toLocaleTimeString('pl-PL') + ', osób: ' + P.length + rTxt;
       $('roundBtn').hidden = false;
     } catch (e){
-      if (p !== pin) return;
+      if (p !== pin || w !== widok) return;
       if (e.code === 'pin' || e.code === 'locked'){
         pin = ''; if (KOD_LINKU) ls.del(pkey(KOD_LINKU));
         askPin(e.code === 'locked' ? 'Za dużo prób z błędnym PIN-em. Spróbuj ponownie za 10 minut.' : 'Nieprawidłowy PIN.');
@@ -1178,9 +1182,27 @@ function initBoard(){
       }
       $('boardStamp').textContent = 'Brak połączenia. Próbuję ponownie za chwilę…';
       if (!started) return;
-    } finally { busy = false; }
+    } finally {
+      busy = false;
+      if (pin && (p !== pin || w !== widok)) setTimeout(refresh, 0);   // zmiana w trakcie zapytania: od razu wczytaj nowe
+    }
     draw();
   }
+  // wybór rundy pod tablicą (tylko podgląd, nic nie zmienia na serwerze); widoczny, gdy grupa ma więcej niż jedną rundę
+  function drawRundy(b){
+    const sel = $('boardRunda');
+    $('rundaBox').hidden = b.rundy.length < 2;
+    const sig = JSON.stringify(b.rundy);
+    if (sig === rundySig) return;
+    rundySig = sig; sel.textContent = '';
+    const odTxt = od => od ? ' (od ' + new Date(od).toLocaleString('pl-PL', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }) + ')' : '';
+    const add = (v, t) => { const o = document.createElement('option'); o.value = v; o.textContent = t; sel.appendChild(o); };
+    b.rundy.slice().reverse().forEach((r, i) => add(i ? String(r.n) : '', r.n + (i ? '' : ', bieżąca') + odTxt(r.od)));
+    add('wszystkie', 'wszystkie');
+    if (![...sel.options].some(o => o.value === widok)) widok = '';
+    sel.value = widok;
+  }
+  $('boardRunda').addEventListener('change', () => { widok = $('boardRunda').value; refresh(); });
   // ręczna zmiana PIN-u (też wyjście awaryjne, gdy tablica nie chce się wczytać)
   $('pinBtn').addEventListener('click', () => { pin = ''; askPin(); });
   // nowa runda: tylko z PIN-em prowadzącego (studenci znają tylko PIN grupy)
@@ -1195,7 +1217,7 @@ function initBoard(){
     if (!ap){ roundMsg('Wpisz PIN prowadzącego.'); return; }
     try {
       const j = await api.admin(akcja, pin, ap);
-      $('roundPin').value = '';
+      $('roundPin').value = ''; widok = '';
       roundMsg(akcja === 'nowa_runda' ? 'Zaczęła się runda ' + j.runda + '. Tablica jest pusta, poprzednie wyniki zostały w arkuszu.' : 'Wrócono do rundy ' + j.runda + '.', true);
       setTimeout(() => { $('roundForm').hidden = true; }, 4000);
       refresh();

@@ -8,6 +8,8 @@
  * GET ?pin=… → {ok, kod, rows:[{kod, nick, mod, score, disp}]}: najlepszy wynik każdej osoby w każdym zadaniu.
  * GET ?tryb=grupa&pin=… → {ok, kod, rows:[{p, mod, det, s}]}: ostatnie podejście każdej osoby do wykresów, bez pseudonimów
  *   (s = sport T/N/'').
+ * Oba GET-y: &runda=N pokazuje wybraną rundę, &runda=wszystkie wszystkie rundy (domyślnie bieżąca);
+ *   odpowiedź ma runda (bieżąca), widok (pokazana) i w tablicy rundy:[{n, od}].
  * Moderacja: usuń wiersz w arkuszu „wyniki”.
  *
  * Ochrona zapisu: wynik przyjmowany tylko z PIN-em, a PIN wyznacza grupę (kod z linku jest ignorowany).
@@ -177,7 +179,7 @@ function doPost(e) {
     } finally {
       lock.releaseLock();
     }
-    cache.removeAll(['b_' + kod, 'b_', 'g_' + kod, 'g_']);
+    cache.removeAll(klucze_(kod));
     return json_({ ok: true, n: rows.length, kod: kod });
   } catch (err) {
     return json_({ ok: false, error: String(err) });
@@ -195,25 +197,25 @@ function doGet(e) {
       if (pin) bump_(cache, 'zly_pin', 600);   // pusty PIN (np. stara wersja strony) nie zużywa limitu
       return json_({ ok: false, code: 'pin', error: 'zły PIN' });
     }
-    const kod = grupa.kod, rd = runda_(kod);
-    if (p.tryb === 'grupa') return group_(kod, cache, rd);
-    const key = 'b_' + kod;
+    const kod = grupa.kod, rs = rundy_(kod), z = zakres_(rs, p.runda);
+    if (p.tryb === 'grupa') return group_(kod, cache, z, rs);
+    const key = 'b_' + kod + '_' + z.klucz;
     const hit = cache.get(key);
     if (hit) return ContentService.createTextOutput(hit).setMimeType(ContentService.MimeType.JSON);
 
     const vals = sheet_().getDataRange().getValues();
     vals.shift();
-    const since = Math.max(Date.now() - DAYS * 864e5, rd.od);
     const best = {};
     vals.forEach(function (r) {
       const czas = r[0], k = String(r[1] || ''), nick = String(r[2] || ''), mod = String(r[4] || ''), score = Number(r[5]), disp = String(r[6] || '');
       if (!nick || !MODS[mod] || !isFinite(score)) return;
       if (kod && k !== kod) return;
-      if (new Date(czas).getTime() < since) return;
+      const t = new Date(czas).getTime();
+      if (t < z.od || t >= z.do) return;
       const id = k + '|' + nick.toLowerCase() + '|' + mod;
       if (!best[id] || score < best[id].score) best[id] = { kod: k, nick: nick, mod: mod, score: score, disp: disp };
     });
-    const out = JSON.stringify({ ok: true, kod: kod, runda: rd.n, rows: Object.keys(best).map(function (id) { return best[id]; }) });
+    const out = JSON.stringify({ ok: true, kod: kod, runda: rs[rs.length - 1].n, widok: z.klucz, rundy: rs, rows: Object.keys(best).map(function (id) { return best[id]; }) });
     if (out.length < 90000) cache.put(key, out, CACHE_S);
     return ContentService.createTextOutput(out).setMimeType(ContentService.MimeType.JSON);
   } catch (err) {
@@ -222,17 +224,16 @@ function doGet(e) {
 }
 
 // ostatnie podejście każdej osoby w każdym zadaniu; osoba jako numer, bez pseudonimu
-function group_(kod, cache, rd) {
-  const key = 'g_' + kod;
+function group_(kod, cache, z, rs) {
+  const key = 'g_' + kod + '_' + z.klucz;
   const hit = cache.get(key);
   if (hit) return ContentService.createTextOutput(hit).setMimeType(ContentService.MimeType.JSON);
   const vals = sheet_().getDataRange().getValues();
   vals.shift();
-  const since = Math.max(Date.now() - DAYS * 864e5, rd.od);
   const last = {}, ids = {};
   vals.forEach(function (r) {
     const t = new Date(r[0]).getTime(), k = String(r[1] || ''), nick = String(r[2] || '').toLowerCase(), mod = String(r[4] || '');
-    if (!nick || !MODS[mod] || (kod && k !== kod) || t < since) return;
+    if (!nick || !MODS[mod] || (kod && k !== kod) || t < z.od || t >= z.do) return;
     const who = k + '|' + nick, id = who + '|' + mod;
     if (!last[id] || t >= last[id].t) last[id] = { t: t, who: who, mod: mod, det: r[7], s: String(r[3] || '') };
   });
@@ -244,7 +245,7 @@ function group_(kod, cache, rd) {
     if (!(x.who in ids)) ids[x.who] = Object.keys(ids).length;
     rows.push({ p: ids[x.who], mod: x.mod, det: det, s: (x.s === 'T' || x.s === 'N') ? x.s : '' });
   });
-  const out = JSON.stringify({ ok: true, kod: kod, runda: rd.n, rows: rows });
+  const out = JSON.stringify({ ok: true, kod: kod, runda: rs[rs.length - 1].n, widok: z.klucz, rows: rows });
   if (out.length < 90000) cache.put(key, out, CACHE_S);
   return ContentService.createTextOutput(out).setMimeType(ContentService.MimeType.JSON);
 }
@@ -309,7 +310,7 @@ function wstawDaneTestowe() {
   }
   const sh = sheet_();
   sh.getRange(sh.getLastRow() + 1, 1, rows.length, rows[0].length).setValues(rows);
-  CacheService.getScriptCache().removeAll(['b_' + KOD_TEST, 'g_' + KOD_TEST, 'b_', 'g_']);
+  CacheService.getScriptCache().removeAll(klucze_(KOD_TEST));
   Logger.log('Dodano ' + rows.length + ' wierszy (20 osób) w grupie ' + KOD_TEST + '. Rzutnik: ' + ADRES_STRONY + '?tablica&kod=' + KOD_TEST + '&pin=' + pin);
 }
 
@@ -336,7 +337,7 @@ function usunDaneTestowe() {
   props.setProperty('PINY', pary.join(','));
   props.setProperty('PINY_ADMIN', (props.getProperty('PINY_ADMIN') || '').split(',').filter(function (x) { return x.trim() && kodPary_(x) !== KOD_TEST; }).join(','));
   props.deleteProperty('RUNDY_' + KOD_TEST);
-  CacheService.getScriptCache().removeAll(['b_' + KOD_TEST, 'g_' + KOD_TEST, 'b_', 'g_']);
+  CacheService.getScriptCache().removeAll(klucze_(KOD_TEST));
   Logger.log('Usunięto ' + n + ' wierszy grupy ' + KOD_TEST + ' i jej PIN. Pozostałe grupy bez zmian.');
 }
 
@@ -355,6 +356,23 @@ function rundy_(kod) {
   return [{ n: 1, od: 0 }];
 }
 function runda_(kod) { const a = rundy_(kod); return a[a.length - 1]; }
+
+// klucze pamięci podręcznej tablicy i wykresów grupy: każda runda osobno plus „wszystkie” (i stare klucze bez rundy)
+function klucze_(kod, rs) {
+  const k = ['b_' + kod, 'g_' + kod, 'b_', 'g_'];
+  (rs || rundy_(kod)).map(function (r) { return String(r.n); }).concat(['wszystkie']).forEach(function (x) { k.push('b_' + kod + '_' + x, 'g_' + kod + '_' + x); });
+  return k;
+}
+
+// okno czasu do odczytu tablicy: bieżąca runda (domyślnie), wybrana runda (?runda=1) albo wszystkie (?runda=wszystkie);
+// zawsze najwyżej DAYS dni wstecz. klucz = do pamięci podręcznej i jako „widok” w odpowiedzi.
+function zakres_(rs, wyb) {
+  const min = Date.now() - DAYS * 864e5;
+  if (wyb === 'wszystkie') return { od: min, do: Infinity, klucz: 'wszystkie' };
+  let i = rs.length - 1;
+  for (let j = 0; j < rs.length; j++) if (String(rs[j].n) === String(wyb)) i = j;
+  return { od: Math.max(min, rs[i].od), do: i + 1 < rs.length ? rs[i + 1].od : Infinity, klucz: String(rs[i].n) };
+}
 
 // PINY_ADMIN = "915302=WT,448190=MO" → { '915302': 'WT', '448190': 'MO' }
 function adminPins_() {
@@ -381,7 +399,7 @@ function admin_(d) {
     else if (d.akcja === 'cofnij_runde') { if (a.length > 1) a.pop(); }
     else return json_({ ok: false, error: 'nieznana akcja' });
     PropertiesService.getScriptProperties().setProperty('RUNDY_' + kod, JSON.stringify(a.slice(-50)));
-    cache.removeAll(['b_' + kod, 'g_' + kod, 'b_', 'g_']);
+    cache.removeAll(klucze_(kod, a));
     return json_({ ok: true, kod: kod, runda: a[a.length - 1].n });
   } finally {
     lock.releaseLock();
