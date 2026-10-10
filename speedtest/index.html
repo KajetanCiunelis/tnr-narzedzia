@@ -317,6 +317,7 @@ body.projector .boardRule{font-size:22px}
   <div class="row boardMeta">
     <span id="boardStamp"></span>
     <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="boardAuto" checked style="width:auto"> przełączaj zakładki</label>
+    <button class="ghost sm" type="button" id="pinBtn">Wpisz PIN</button>
     <button class="ghost sm" type="button" id="roundBtn" hidden>Nowa runda (wyczyść tablicę)</button>
   </div>
   <form class="card" id="roundForm" hidden>
@@ -1131,8 +1132,9 @@ function initBoard(){
   const ls = { get: k => { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } },
                set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} },
                del: k => { try { localStorage.removeItem(k); } catch (e) {} } };
-  let pin = (Q.get('pin') || '').trim(), started = false;
+  let pin = (Q.get('pin') || '').trim(), started = false, looping = false, busy = false;
   if (Q.get('pin')){
+    if (KOD_LINKU && pin) ls.set(pkey(KOD_LINKU), pin);   // od razu, bo z paska adresu zaraz zniknie; zły PIN skasuje refresh()
     try { const u = new URL(location.href); u.searchParams.delete('pin'); history.replaceState(null, '', u.pathname + '?' + u.searchParams.toString().replace(/tablica=(&|$)/, 'tablica$1')); } catch (e) {}
   }
   if (!pin && KOD_LINKU) pin = ls.get(pkey(KOD_LINKU));
@@ -1147,8 +1149,13 @@ function initBoard(){
   function autoTab(){ if ($('boardAuto').checked && tabs.length > 1){ cur = tabs[(tabs.indexOf(cur) + 1) % tabs.length]; draw(); } }
   async function refresh(){
     if (!pin){ if ($('boardPin').hidden) askPin(); return; }
+    if (!looping){ looping = true; setInterval(refresh, 15000); setInterval(autoTab, 12000); }   // ponawia też wtedy, gdy pierwsze wczytanie się nie uda
+    if (busy) return;   // Apps Script bywa wolny: zapytania się nie nakładają
+    busy = true;
+    const p = pin;
     try {
-      const [b, grp] = await Promise.all([api.board(pin), api.group(pin)]);
+      const [b, grp] = await Promise.all([api.board(p), api.group(p)]);
+      if (p !== pin) return;   // w międzyczasie wpisano inny PIN albo otwarto formularz
       if (KOD_LINKU && b.kod && b.kod !== KOD_LINKU){   // PIN innej grupy: nie pokazujemy cudzych danych
         pin = '';
         askPin('Ten PIN należy do grupy ' + b.kod + '. Wpisz PIN grupy ' + KOD_LINKU + '.');
@@ -1157,22 +1164,25 @@ function initBoard(){
       if (b.kod) ls.set(pkey(b.kod), pin);
       $('boardPin').hidden = true; $('bPin').value = '';
       if (b.kod && b.kod !== kod){ kod = b.kod; setTitle(kod); }
-      if (!started){ started = true; setInterval(refresh, 15000); setInterval(autoTab, 12000); }
+      started = true;
       by = rankings(b.rows);
       const m = {}; grp.forEach(r => { if (MOD[r.mod] && r.det){ const o = (m[r.p] = m[r.p] || {}); o[r.mod] = r.det; if (r.s) o._sport = r.s; } }); P = Object.values(m);
       $('boardStamp').textContent = 'Zaktualizowano o ' + new Date().toLocaleTimeString('pl-PL') + ', osób: ' + P.length + (b.runda > 1 ? ', runda ' + b.runda : '');
       $('roundBtn').hidden = false;
     } catch (e){
+      if (p !== pin) return;
       if (e.code === 'pin' || e.code === 'locked'){
         pin = ''; if (KOD_LINKU) ls.del(pkey(KOD_LINKU));
         askPin(e.code === 'locked' ? 'Za dużo prób z błędnym PIN-em. Spróbuj ponownie za 10 minut.' : 'Nieprawidłowy PIN.');
         return;
       }
-      $('boardStamp').textContent = 'Brak połączenia. Próbuję ponownie…';
+      $('boardStamp').textContent = 'Brak połączenia. Próbuję ponownie za chwilę…';
       if (!started) return;
-    }
+    } finally { busy = false; }
     draw();
   }
+  // ręczna zmiana PIN-u (też wyjście awaryjne, gdy tablica nie chce się wczytać)
+  $('pinBtn').addEventListener('click', () => { pin = ''; askPin(); });
   // nowa runda: tylko z PIN-em prowadzącego (studenci znają tylko PIN grupy)
   const roundMsg = (t, ok) => { $('roundMsg').className = ok ? 'ok' : 'err'; $('roundMsg').textContent = t; };
   $('roundBtn').addEventListener('click', () => {
