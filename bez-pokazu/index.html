@@ -1,0 +1,455 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Instrukcja bez pokazu</title>
+<meta name="description" content="Gra w parach do ćwiczeń z Teorii nauczania ruchu: ustaw partnera w pozycji tylko słowami, bez pokazu i bez zakazanych słów.">
+<link rel="stylesheet" href="../fonts/lato.css">
+<style>
+/* Szata AWF jak na stronie startowej: zieleń 006341 / 004A30, biel, odcienie zieleni, Lato.
+   Żółty FBAE40 tylko jako kształt, nigdy jako tekst na bieli. */
+:root{
+  color-scheme:light;
+  --bg:#ffffff; --panel:#f2f7f4; --tile:#e3eee8; --line:#c9d6cf;
+  --ink:#1f2933; --muted:#55636b;
+  --brand:#006341; --brand-dk:#004a30; --accent:#006341; --on-brand:#ffffff; --brand-sub:#cfe3d8;
+  --fig:#006341; --fig-far:#91bcac; --ground:#9aa8a1;
+  --bad:#a3322b; --bad-soft:#f8e3e1;
+  --yellow:#fbae40;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  color-scheme:dark;
+  --bg:#0d1613; --panel:#14211c; --tile:#1c2d26; --line:#293b33;
+  --ink:#e8f1ec; --muted:#a3b6ac; --accent:#7ad3a6;
+  --fig:#7ad3a6; --fig-far:#3d6853; --ground:#4b5d55;
+  --bad:#f08a80; --bad-soft:#3b1f1c;
+}}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0d1613; --panel:#14211c; --tile:#1c2d26; --line:#293b33;
+  --ink:#e8f1ec; --muted:#a3b6ac; --accent:#7ad3a6;
+  --fig:#7ad3a6; --fig-far:#3d6853; --ground:#4b5d55;
+  --bad:#f08a80; --bad-soft:#3b1f1c;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Lato,"Segoe UI",Arial,sans-serif;font-size:16px;line-height:1.5;-webkit-text-size-adjust:100%}
+.wrap{max-width:640px;margin:0 auto;padding-inline:16px;padding-block:16px 40px;display:flex;flex-direction:column;gap:16px}
+.scr{display:flex;flex-direction:column;gap:16px}
+.band{position:relative;background:var(--brand);color:var(--on-brand);border-radius:14px;padding:20px 18px 18px;display:flex;flex-direction:column;gap:6px;overflow:hidden}
+.band .mark{width:36px;height:6px;background:var(--yellow);border-radius:1px}
+.band h1{font-size:26px;font-weight:900;margin:0;line-height:1.15;text-wrap:balance}
+.band p{margin:0;color:var(--brand-sub);max-width:54ch}
+.band a{color:var(--on-brand);font-weight:700;font-size:14px}
+.band::after{content:"";position:absolute;right:-28px;bottom:-28px;width:96px;height:96px;border:14px solid rgba(255,255,255,.07);border-radius:50%}
+h2{font-size:15px;font-weight:900;margin:4px 0 0;color:var(--accent)}
+.panel{background:var(--panel);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.panel ol,.panel ul{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:4px}
+.choices{display:flex;flex-direction:column;gap:8px}
+.choice{display:flex;gap:12px;align-items:flex-start;background:var(--panel);border:1.5px solid transparent;border-radius:12px;padding:14px;cursor:pointer;text-align:left;font:inherit;color:inherit}
+.choice[aria-pressed="true"]{border-color:var(--accent);background:var(--tile)}
+.choice .dot{flex:0 0 20px;height:20px;border-radius:50%;border:2px solid var(--accent);margin-top:2px;display:grid;place-items:center}
+.choice[aria-pressed="true"] .dot::after{content:"";width:10px;height:10px;border-radius:50%;background:var(--accent)}
+.choice b{display:block;font-size:17px}
+.choice span.ds{font-size:14px;color:var(--muted)}
+button{font:inherit}
+.btn{appearance:none;border:0;border-radius:12px;background:var(--brand);color:var(--on-brand);font-weight:900;font-size:18px;padding:14px 18px;cursor:pointer;width:100%}
+.btn:hover{background:var(--brand-dk)}
+.btn.sec{background:transparent;color:var(--accent);border:1.5px solid var(--accent)}
+.btn:focus-visible,.choice:focus-visible,.seg button:focus-visible{outline:3px solid var(--yellow);outline-offset:2px}
+.row{display:flex;gap:10px}
+.row>*{flex:1 1 0}
+.stage{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:14px;color:var(--muted);font-weight:700}
+.stage .tag{background:var(--tile);color:var(--ink);border-radius:999px;padding:3px 10px}
+.rule{background:var(--brand);color:var(--on-brand);border-radius:12px;padding:12px 14px;font-weight:700}
+.card{background:var(--panel);border-radius:14px;padding:12px 12px 14px;display:flex;flex-direction:column;gap:10px;align-items:stretch}
+.card .nm{font-size:20px;font-weight:900;text-align:center;text-wrap:balance}
+.card .sub{font-size:14px;color:var(--muted);text-align:center;margin-top:-6px}
+.fig{width:100%;max-height:46vh;display:block}
+.taboo{display:flex;flex-direction:column;gap:6px}
+.taboo .lbl{font-size:13px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;color:var(--bad)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{background:var(--bad-soft);color:var(--bad);border-radius:999px;padding:3px 11px;font-weight:700;text-decoration:line-through;text-decoration-thickness:1.5px}
+.timer{display:flex;align-items:center;gap:12px}
+.timer .t{font-size:40px;font-weight:900;font-variant-numeric:tabular-nums;min-width:4.2ch}
+.timer .ph{font-size:14px;color:var(--muted);font-weight:700}
+.timer.end .t{color:var(--bad)}
+.seg{display:flex;flex-direction:column;gap:8px}
+.seg .it{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--bg);border-radius:10px;padding:8px 10px}
+.seg .it b{font-size:16px}
+.seg .bt{display:flex;gap:6px}
+.seg button{border:1.5px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;padding:6px 12px;font-weight:700;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:var(--on-brand)}
+.score{display:flex;gap:10px}
+.score .s{flex:1;background:var(--panel);border-radius:12px;padding:12px;text-align:center}
+.score .s b{display:block;font-size:30px;font-weight:900;color:var(--accent);font-variant-numeric:tabular-nums}
+.score .s span{font-size:14px;color:var(--muted)}
+.note{font-size:14px;color:var(--muted);margin:0;max-width:60ch}
+[hidden]{display:none!important}
+footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="band">
+    <span class="mark" aria-hidden="true"></span>
+    <h1>Instrukcja bez pokazu</h1>
+    <p>Trener widzi postać, uczeń nie.</p>
+    <a href="../">← Narzędzia TNR</a>
+  </header>
+
+  <!-- ===================================================== start -->
+  <section id="s-start" class="scr">
+    <div class="panel">
+      <ol>
+        <li>Uczeń stoi tyłem do trenera.</li>
+        <li>Runda 1: tylko słowa, 1,5 min.</li>
+        <li>Runda 2: zamiana ról, 20 s pokazu, potem słowa.</li>
+      </ol>
+    </div>
+    <h2>Talia</h2>
+    <div class="choices" id="talie" role="radiogroup" aria-label="Talia kart">
+      <button class="choice" type="button" data-talia="cw" aria-pressed="true"><span class="dot"></span><span><b>Ćwiczenia</b><span class="ds">z zakazanymi słowami</span></span></button>
+      <button class="choice" type="button" data-talia="pozy" aria-pressed="false"><span class="dot"></span><span><b>Pozy</b><span class="ds">bez nazw, cieszynki, memy</span></span></button>
+      <button class="choice" type="button" data-talia="obie" aria-pressed="false"><span class="dot"></span><span><b>Obie talie</b></span></button>
+    </div>
+    <button class="btn" id="b-start" type="button">Start</button>
+  </section>
+
+  <!-- ===================================================== karta -->
+  <section id="s-karta" class="scr" hidden>
+    <div class="stage"><span id="k-runda">Runda 1</span><span class="tag" id="k-talia">Ćwiczenia</span></div>
+    <div class="rule" id="k-zasada">Tylko słowa</div>
+    <div class="card">
+      <div class="nm" id="k-nazwa"></div>
+      <div class="sub" id="k-widok"></div>
+      <svg class="fig" id="k-fig" role="img" aria-label="Postać do odtworzenia"></svg>
+      <div class="taboo" id="k-tabu"><span class="lbl">Nie mów</span><div class="chips" id="k-chips"></div></div>
+    </div>
+    <div class="timer" id="k-timer">
+      <span class="t" id="k-t">1:30</span>
+      <span class="ph" id="k-ph"></span>
+    </div>
+    <div class="row">
+      <button class="btn sec" id="b-timer" type="button">Od nowa</button>
+      <button class="btn" id="b-pokaz" type="button">Pokaż kartę</button>
+    </div>
+    <button class="btn sec" id="b-inna" type="button">Inna karta</button>
+  </section>
+
+  <!-- ===================================================== porównanie -->
+  <section id="s-ocena" class="scr" hidden>
+    <div class="stage"><span id="o-runda">Runda 1: porównanie</span></div>
+    <div class="card">
+      <div class="nm" id="o-nazwa"></div>
+      <svg class="fig" id="o-fig" role="img" aria-label="Postać z karty"></svg>
+    </div>
+    <div class="panel">
+      <h2 style="margin:0">Zgadza się?</h2>
+      <div class="seg" id="o-seg"></div>
+    </div>
+    <button class="btn" id="b-dalej" type="button">Dalej</button>
+  </section>
+
+  <!-- ===================================================== podsumowanie -->
+  <section id="s-koniec" class="scr" hidden>
+    <h2>Wynik</h2>
+    <div class="score">
+      <div class="s"><b id="w1">–</b><span>słowa</span></div>
+      <div class="s"><b id="w2">–</b><span>pokaz + słowa</span></div>
+    </div>
+    <div class="panel">
+      <ul>
+        <li>Które słowa pomagały?</li>
+        <li>Co dał pokaz?</li>
+      </ul>
+    </div>
+    <button class="btn" id="b-znowu" type="button">Jeszcze raz</button>
+  </section>
+  <footer>Teoria nauczania ruchu · AWF Warszawa · 2026/27</footer>
+</div>
+
+<script>
+/*POZY-START*/
+const POZY = {
+  "cw": [
+    {"id": "pompka-noga", "nazwa": "Pompka z uniesioną nogą", "widok": "z boku", "tabu": ["pompka", "podpór", "deska", "noga w górę"],
+     "fk":{"tulow":20,"glowa":20,"rb":[270,270],"rd":[270,270],"nb":[183,183],"nd":[203,203],"db":"podpor","dd":"podpor"}},
+    {"id": "deska-reka", "nazwa": "Deska na przedramionach z ręką w przód", "widok": "z boku", "tabu": ["deska", "plank", "podpór", "superman"],
+     "fk":{"tulow":12,"glowa":12,"rb":[12,12],"rd":[270,0],"nb":[186,186],"nd":[186,186]}},
+    {"id": "wykrok-rece", "nazwa": "Wykrok w przód, tułów pochylony, ręce skośnie w przód", "widok": "z boku", "tabu": ["wykrok", "lunge", "krok", "klęk", "ręce w górę"],
+     "fk":{"tulow":65,"glowa":65,"rb":[30,30],"rd":[30,30],"nb":[358,268],"nd":[258,180],"sd":180}},
+    {"id": "mostek-jednonoz", "nazwa": "Mostek biodrowy na jednej nodze", "widok": "z boku", "tabu": ["mostek", "most", "bridge", "biodra w górę", "jedna noga"],
+     "fk":{"tulow":206,"glowa":180,"rb":[0,0],"rd":[0,0],"nb":[25,25],"nd":[8,280]}},
+    {"id": "bird-dog", "nazwa": "Klęk podparty z wyprostem ręki i nogi", "widok": "z boku", "tabu": ["bird dog", "pies", "czworaki", "klęk podparty", "kot"],
+     "fk":{"tulow":21,"glowa":8,"rb":[30,30],"rd":[270,270],"nb":[270,180],"nd":[184,184],"dd":"podpor","sb":180}},
+    {"id": "martwy-jednonoz", "nazwa": "Martwy ciąg na jednej nodze", "widok": "z boku", "tabu": ["martwy ciąg", "deadlift", "jaskółka", "waga", "jedna noga"],
+     "fk":{"tulow":10,"glowa":5,"rb":[270,270],"rd":[270,270],"nb":[280,262],"nd":[178,178],"db":"piesc","dd":"piesc"}},
+    {"id": "jaskolka-rece", "nazwa": "Jaskółka z rękami w dół", "widok": "z boku", "tabu": ["jaskółka", "waga", "samolot", "balans", "równoważnia"],
+     "fk":{"tulow":2,"glowa":5,"rb":[270,270],"rd":[270,270],"nb":[270,270],"nd":[180,180]}},
+    {"id": "klek-jednonoz", "nazwa": "Klęk jednonóż, ręka skośnie w górę, druga w przód", "widok": "z boku", "tabu": ["klęk", "rycerz", "oświadczyny", "wykrok", "kolano"],
+     "fk":{"tulow":90,"glowa":90,"rb":[55,55],"rd":[0,0],"nb":[0,270],"nd":[270,180],"sd":180}},
+    {"id": "stol", "nazwa": "Podpór tyłem z biodrami w górze", "widok": "z boku", "tabu": ["stół", "stolik", "krab", "mostek", "podpór tyłem"],
+     "fk":{"tulow":162,"glowa":160,"rb":[270,270],"rd":[270,270],"nb":[0,270],"nd":[0,270],"db":"podpor","dd":"podpor"}},
+    {"id": "hollow", "nazwa": "Leżenie tyłem z uniesionymi rękami i nogami", "widok": "z boku", "tabu": ["łódka", "hollow", "banan", "brzuszki", "leżenie"],
+     "fk":{"tulow":165,"glowa":165,"rb":[150,150],"rd":[150,150],"nb":[15,15],"nd":[15,15],"sb":15,"sd":15}},
+    {"id": "plywanie", "nazwa": "Leżenie przodem, uniesiona ręka i przeciwna noga", "widok": "z boku", "tabu": ["superman", "pływanie", "łódka", "rybka", "leżenie"],
+     "fk":{"tulow":6,"glowa":12,"rb":[18,18],"rd":[355,0],"nb":[180,180],"nd":[166,166],"sb":180,"sd":166}},
+    {"id": "sklon-rece", "nazwa": "Skłon w przód, ręce w tył i w górę", "widok": "z boku", "tabu": ["skłon", "ukłon", "dzień dobry", "good morning", "ręce w tył"],
+     "fk":{"tulow":15,"glowa":5,"rb":[150,150],"rd":[150,150],"nb":[270,270],"nd":[270,270]}},
+    {"id": "deska-boczna-noga", "nazwa": "Deska boczna z nogą uniesioną w górę", "widok": "z przodu", "tabu": ["deska", "boczna", "plank", "gwiazda", "podpór"],
+     "fk":{"tulow":14,"glowa":14,"rb":[270,0],"rd":[90,90],"nb":[194,194],"nd":[166,166],"przod":true}},
+    {"id": "wykrok-boczny", "nazwa": "Wykrok w bok, ręce w różnych kierunkach", "widok": "z przodu", "tabu": ["wykrok", "boczny", "lunge", "przysiad", "rozkrok"],
+     "fk":{"tulow":80,"glowa":80,"rb":[45,45],"rd":[180,180],"nb":[315,270],"nd":[238,238],"db":"piesc","przod":true}},
+    {"id": "noga-w-bok", "nazwa": "Stanie na jednej nodze, druga w bok", "widok": "z przodu", "tabu": ["bocian", "flaming", "jedna noga", "noga w bok", "gwiazda"],
+     "fk":{"tulow":95,"glowa":95,"rb":[30,30],"rd":[200,250],"nb":[270,270],"nd":[215,215],"db":"palec","dd":"piesc","przod":true}},
+    {"id": "sklon-boczny", "nazwa": "Skłon w bok w rozkroku, ręka nad głową", "widok": "z przodu", "tabu": ["skłon", "bok", "rozkrok", "przechył", "sięgnij"],
+     "fk":{"tulow":115,"glowa":125,"rb":[130,160],"rd":[260,265],"nb":[290,290],"nd":[250,250],"przod":true}},
+    {"id": "przysiad-szeroki", "nazwa": "Szeroki przysiad, ręce zgięte w górę", "widok": "z przodu", "tabu": ["przysiad", "sumo", "kaktus", "szeroko", "rozkrok"],
+     "fk":{"tulow":90,"glowa":90,"rb":[0,90],"rd":[180,90],"nb":[320,270],"nd":[220,270],"db":"piesc","dd":"piesc","przod":true}}
+  ],
+  "pozy": [
+    {"id": "A", "nazwa": "Poza A", "widok": "z przodu",
+     "fk":{"tulow":90,"glowa":90,"rb":[42,66],"rd":[180,180],"nb":[287,270],"nd":[186,285],"db":"piesc","przod":true}},
+    {"id": "B", "nazwa": "Poza B", "widok": "z przodu",
+     "fk":{"tulow":73,"glowa":67,"rb":[292,281],"rd":[106,63],"nb":[308,295],"nd":[232,245],"przod":true}},
+    {"id": "C", "nazwa": "Poza C", "widok": "z przodu",
+     "fk":{"tulow":90,"glowa":90,"rb":[29,31],"rd":[209,211],"nb":[318,308],"nd":[215,259],"dd":"palec","sb":0,"przod":true}},
+    {"id": "D", "nazwa": "Poza D", "widok": "z przodu",
+     "fk":{"tulow":90,"glowa":117,"rb":[0,90],"rd":[180,90],"nb":[324,256],"nd":[216,284],"przod":true}},
+    {"id": "E", "nazwa": "Poza E", "widok": "z przodu",
+     "fk":{"tulow":90,"glowa":90,"rb":[40,95],"rd":[205,205],"nb":[270,270],"nd":[215,275],"db":"piesc","przod":true}},
+    {"id": "F", "nazwa": "Poza F", "widok": "z przodu",
+     "fk":{"tulow":78,"glowa":70,"rb":[5,5],"rd":[150,90],"nb":[290,290],"nd":[248,248],"przod":true}},
+    {"id": "G", "nazwa": "Poza G", "widok": "z przodu",
+     "fk":{"tulow":90,"glowa":90,"rb":[0,90],"rd":[180,270],"nb":[305,250],"nd":[235,290],"dd":"piesc","przod":true}},
+    {"id": "H", "nazwa": "Poza H", "widok": "z przodu",
+     "fk":{"tulow":104,"glowa":110,"rb":[60,60],"rd":[220,300],"nb":[282,282],"nd":[258,200],"db":"palec","przod":true}},
+    {"id": "siuuu", "nazwa": "Cieszynka „Siuuu”", "widok": "z przodu", "tabu": ["Ronaldo", "siu", "CR7", "cieszynka", "gol"],
+     "fk":{"tulow":90,"glowa":95,"rb":[320,320],"rd":[220,220],"nb":[300,275],"nd":[240,265],"patrzy":"gora","przod":true}},
+    {"id": "dab", "nazwa": "Dab", "widok": "z przodu", "tabu": ["dab", "dabbing", "kichnięcie", "łokieć", "taniec"],
+     "fk":{"tulow":90,"glowa":60,"rb":[20,150],"rd":[150,150],"nb":[280,280],"nd":[260,260],"patrzy":"dol","przod":true}},
+    {"id": "bolt", "nazwa": "Cieszynka Bolta", "widok": "z przodu", "tabu": ["Bolt", "Usain", "błyskawica", "sprinter", "celowanie"],
+     "fk":{"tulow":98,"glowa":95,"rb":[35,35],"rd":[200,35],"db":"palec","dd":"palec","nb":[295,270],"nd":[245,245],"patrzy":"prawo","przod":true}},
+    {"id": "zuraw", "nazwa": "Żuraw z „Karate Kid”", "widok": "z przodu", "tabu": ["żuraw", "Karate Kid", "karate", "kopnięcie", "bocian"],
+     "fk":{"tulow":90,"glowa":90,"rb":[40,40],"rd":[140,140],"kb":300,"kd":240,"nb":[325,260],"nd":[270,270],"przod":true}},
+    {"id": "jackson", "nazwa": "Pochylenie Michaela Jacksona", "widok": "z boku", "tabu": ["Michael Jackson", "MJ", "Smooth Criminal", "pochylenie", "taniec"],
+     "fk":{"tulow":45,"glowa":45,"rb":[225,225],"rd":[225,225],"nb":[225,225],"nd":[225,225],"sb":0,"sd":0}},
+    {"id": "gangnam", "nazwa": "Gangnam Style", "widok": "z przodu", "tabu": ["Gangnam", "PSY", "koń", "lasso", "taniec"],
+     "fk":{"tulow":90,"glowa":90,"rb":[260,190],"rd":[280,350],"db":"piesc","dd":"piesc","nb":[320,270],"nd":[220,270],"przod":true}},
+    {"id": "messi", "nazwa": "Cieszynka Messiego", "widok": "z przodu", "tabu": ["Messi", "niebo", "palce w górę", "cieszynka", "gol"],
+     "fk":{"tulow":90,"glowa":100,"rb":[5,90],"rd":[175,90],"db":"palec","dd":"palec","nb":[275,275],"nd":[265,265],"patrzy":"gora","przod":true}},
+    {"id": "vandamme", "nazwa": "Szpagat Van Damme'a", "widok": "z przodu", "tabu": ["Van Damme", "szpagat", "ciężarówki", "Volvo", "rozkrok"],
+     "fk":{"tulow":90,"glowa":90,"rb":[265,150],"rd":[275,30],"db":"piesc","dd":"piesc","nb":[0,0],"nd":[180,180],"sb":90,"sd":90,"przod":true}}
+  ]
+};
+/*POZY-END*/
+// ---------------------------------------------------------------- geometria postaci
+/* Kąty w stopniach: 0 = w prawo, 90 = w górę, 180 = w lewo, 270 = w dół. fk: tulow (biodra → barki), glowa (szyja),
+   rb / rd = ręka [ramię, przedramię], nb / nd = noga [udo, podudzie]. Widok z boku: postać zwrócona w prawo,
+   „b” = strona bliższa patrzącemu, „d” = dalsza (jaśniejsza). Widok z przodu („przod”): „b” = prawa strona ekranu.
+   Opcje: db / dd = dłoń („dlon” otwarta, „piesc”, „palec” wskazujący, „podpor” płasko na podłożu), kb / kd = kąt dłoni,
+   sb / sd = kąt stopy, patrzy = kierunek twarzy (z boku: kąt; z przodu: „gora”, „dol”, „prawo”, „lewo”). */
+const L = { tulow: 2.1, szyja: 0.85, r: 0.45, udo: 1.35, podudzie: 1.35, ramie: 1.0, przedramie: 1.0,
+            bark: 0.5, biodro: 0.28, stopa: 0.5 };
+const rad = d => d * Math.PI / 180;
+const krok = (p, kat, dl) => [p[0] + dl * Math.cos(rad(kat)), p[1] + dl * Math.sin(rad(kat))];
+
+function szkielet(poza) {
+  const f = poza.fk, przod = !!f.przod, H = [0, 0];
+  const S = krok(H, f.tulow, L.tulow), G = krok(S, f.glowa, L.szyja), pr = f.tulow - 90;
+  const C = krok(S, f.tulow + 180, 0.18);                       // z boku obie ręce wychodzą z jednego barku
+  const bark = przod ? [krok(S, pr, L.bark), krok(S, pr + 180, L.bark)] : [C, C];
+  const biodro = przod ? [krok(H, pr, L.biodro), krok(H, pr + 180, L.biodro)] : [H, H];
+  const reka = (start, katy, typ, kat) => {
+    const lok = krok(start, katy[0], L.ramie), nad = krok(lok, katy[1], L.przedramie);
+    typ = typ || "dlon";
+    return { pts: [start, lok, nad], typ, kat: kat != null ? kat : (typ === "podpor" ? 0 : katy[1]) };
+  };
+  const noga = (start, katy, kat, strona) => {
+    const kol = krok(start, katy[0], L.udo), kos = krok(kol, katy[1], L.podudzie);
+    let dl = L.stopa;
+    if (kat == null) {
+      const a = ((katy[1] % 360) + 360) % 360;
+      if (!przod) kat = katy[1] + 90;                           // z boku: palce w przód względem podudzia
+      else if (a >= 210 && a <= 330) kat = strona > 0 ? 0 : 180; // z przodu, noga w dół: stopa na zewnątrz
+      else { kat = katy[1]; dl = 0.22; }                         // z przodu, noga uniesiona: stopa w skrócie
+    }
+    return { pts: [start, kol, kos], kat, dl };
+  };
+  return { przod, H, S, G, bark, biodro,
+           rb: reka(bark[0], f.rb, f.db, f.kb), rd: reka(bark[1], f.rd, f.dd, f.kd),
+           nb: noga(biodro[0], f.nb, f.sb, 1), nd: noga(biodro[1], f.nd, f.sd, -1) };
+}
+
+function rysuj(svg, poza) {
+  const s = szkielet(poza), f = poza.fk, n = v => v.toFixed(3);
+  const obw = [];                                               // [x, y, promień] do obwiedni i podłoża
+  const pt = (p, r) => { obw.push([p[0], p[1], r || 0]); return `${n(p[0])},${n(p[1])}`; };
+  const kolo = (p, r, kl) => { obw.push([p[0], p[1], r]); return `<circle class="${kl}" cx="${n(p[0])}" cy="${n(p[1])}" r="${r}"/>`; };
+  const odc = (a, b, kl, gr) => `<line class="${kl}" x1="${n(a[0])}" y1="${n(a[1])}" x2="${n(b[0])}" y2="${n(b[1])}"/>` + (pt(a, gr), pt(b, gr), "");
+
+  function reka(r, dal) {
+    const kl = dal ? "d" : "b", fl = dal ? "fd" : "fh", w = r.pts[2], pp = r.pts.map(p => pt(p, 0.14)).join(" ");
+    let o = (dal ? "" : `<polyline class="ha" points="${pp}"/>`) + `<polyline class="${kl}" points="${pp}"/>`;
+    if (!dal) o += kolo(r.pts[1], 0.075, "st");
+    if (r.typ === "piesc") o += kolo(krok(w, r.kat, 0.1), 0.24, fl);
+    else if (r.typ === "palec") {                              // pięść + palec wskazujący przy krawędzi pięści (nie ze środka)
+      const c = krok(w, r.kat, 0.1), strona = Math.sign(w[0] - s.S[0]) || 1;
+      const ocena = k => Math.sin(rad(k)) - 0.5 * strona * Math.cos(rad(k));   // przy pionowej dłoni palec od strony głowy
+      const bok = ocena(r.kat + 90) >= ocena(r.kat - 90) ? r.kat + 90 : r.kat - 90;
+      const p0 = krok(c, bok, 0.13), p1 = krok(p0, r.kat, 0.52), kc = krok(krok(c, bok + 180, 0.17), r.kat, 0.04);
+      obw.push([p1[0], p1[1], 0.07]);
+      o += kolo(c, 0.21, fl) + `<line class="${kl} pal" x1="${n(p0[0])}" y1="${n(p0[1])}" x2="${n(p1[0])}" y2="${n(p1[1])}"/>`
+         + kolo(kc, 0.085, dal ? "fd" : "fb");                   // kciuk po przeciwnej stronie
+    } else {
+      const c = krok(w, r.kat, 0.22);
+      obw.push([...krok(w, r.kat, 0.5), 0.05], [c[0], c[1], 0.2]);
+      o += `<ellipse class="${fl}" cx="${n(c[0])}" cy="${n(c[1])}" rx="0.31" ry="0.2" transform="rotate(${r.kat} ${n(c[0])} ${n(c[1])})"/>`;
+    }
+    return o;
+  }
+  function noga(g, dal) {
+    const kl = dal ? "d" : "b", k = g.pts[2], pp = g.pts.map(p => pt(p, 0.14)).join(" ");
+    let o = (dal ? "" : `<polyline class="ha" points="${pp}"/>`) + `<polyline class="${kl}" points="${pp}"/>`;
+    if (!dal) o += kolo(g.pts[1], 0.075, "st");
+    return o + odc(krok(k, g.kat, -0.08), krok(k, g.kat, g.dl), kl + " sto", 0.11);
+  }
+
+  // tułów, szyja, głowa z twarzą
+  let tul;
+  if (s.przod) tul = `<polygon class="tb" points="${[s.bark[0], s.bark[1], s.biodro[1], s.biodro[0]].map(p => pt(p, 0.14)).join(" ")}"/>`;
+  else tul = odc(s.H, s.S, "b tu", 0.2);
+  tul += odc(s.S, s.G, "b sz", 0.1);
+  let gl = kolo(s.G, L.r, "fb");
+  if (s.przod) {
+    const ox = { prawo: 0.17, lewo: -0.17 }[f.patrzy] || 0, oy = { gora: 0.2, dol: -0.2 }[f.patrzy] ?? 0.04;
+    const lok = (x, y) => krok(krok(s.G, f.glowa - 90, x), f.glowa, y);
+    gl += kolo(lok(ox - 0.16, oy), 0.065, "tw") + kolo(lok(ox + 0.16, oy), 0.065, "tw");
+    if (oy > -0.1) { const a = lok(ox - 0.1, oy - 0.22), b = lok(ox + 0.1, oy - 0.22);
+      gl += `<line class="us" x1="${n(a[0])}" y1="${n(a[1])}" x2="${n(b[0])}" y2="${n(b[1])}"/>`; }
+  } else {
+    const g = f.patrzy != null ? f.patrzy : f.glowa - 90;
+    const nos = [krok(s.G, g + 24, L.r - 0.03), krok(s.G, g, L.r + 0.2), krok(s.G, g - 24, L.r - 0.03)];
+    gl += `<polygon class="fb" points="${nos.map(p => pt(p)).join(" ")}"/>` + kolo(krok(krok(s.G, g, 0.2), f.glowa, 0.12), 0.065, "tw");
+  }
+
+  const warstwy = s.przod ? [noga(s.nd), noga(s.nb), tul, gl, reka(s.rd), reka(s.rb)]
+                          : [noga(s.nd, true), reka(s.rd, true), tul, gl, noga(s.nb), reka(s.rb)];
+  const pad = 0.55;
+  const y0 = Math.min(...obw.map(p => p[1] - p[2])), y1 = Math.max(...obw.map(p => p[1] + p[2]));
+  const x0 = Math.min(...obw.map(p => p[0] - p[2])), x1 = Math.max(...obw.map(p => p[0] + p[2]));
+  const w = Math.max(x1 - x0 + 2 * pad, 5.2), h = Math.max(y1 - y0 + 2 * pad, 4.2), vx = (x0 + x1) / 2 - w / 2;
+  const top = y0 - pad + h;                                     // podłoże = najniższy punkt postaci
+  svg.setAttribute("viewBox", `${n(vx)} 0 ${n(w)} ${n(h)}`);
+  svg.innerHTML = `<style>.b,.d{fill:none;stroke-width:.23;stroke-linecap:round;stroke-linejoin:round}`
+    + `.b{stroke:var(--fig)}.d{stroke:var(--fig-far)}.tu{stroke-width:.44}.sz{stroke-width:.2}.sto{stroke-width:.24}.pal{stroke-width:.13}`
+    + `.ha{fill:none;stroke:var(--panel);stroke-width:.37;stroke-linecap:round;stroke-linejoin:round}`
+    + `.fb{fill:var(--fig)}.fh{fill:var(--fig);stroke:var(--panel);stroke-width:.05}.fd{fill:var(--fig-far)}.tb{fill:var(--fig);stroke:var(--fig);stroke-width:.24;stroke-linejoin:round}`
+    + `.st,.tw{fill:var(--panel)}.us{stroke:var(--panel);stroke-width:.05;stroke-linecap:round}.gr{stroke:var(--ground);stroke-width:.05}</style>`
+    + `<g transform="translate(0 ${n(top)}) scale(1 -1)"><line class="gr" x1="${n(vx + 0.15)}" y1="${n(y0)}" x2="${n(vx + w - 0.15)}" y2="${n(y0)}"/>`
+    + warstwy.join("") + `</g>`;
+}
+
+
+// ---------------------------------------------------------------- stan gry
+const $ = id => document.getElementById(id);
+const ekrany = ["s-start", "s-karta", "s-ocena", "s-koniec"];
+const pokaz = id => { ekrany.forEach(e => $(e).hidden = e !== id); window.scrollTo(0, 0); };
+let talia = "cw", runda = 1, karta = null, wyniki = [null, null], stos = [];
+const zuzyte = new Set();
+
+function losuj() {
+  const pula = talia === "obie" ? [...POZY.cw, ...POZY.pozy] : POZY[talia];
+  let wolne = pula.filter(p => !zuzyte.has(p.id));
+  if (!wolne.length) { pula.forEach(p => zuzyte.delete(p.id)); wolne = pula.slice(); }
+  const p = wolne[Math.floor(Math.random() * wolne.length)];
+  zuzyte.add(p.id);
+  return p;
+}
+
+// ---------------------------------------------------------------- stoper
+let tStart = 0, tDl = 90, tId = null, tSek = 0;
+function format(s) { s = Math.max(0, Math.ceil(s)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; }
+function stoperReset() {
+  clearInterval(tId); tId = null;
+  $("k-t").textContent = format(tDl); $("k-timer").classList.remove("end");
+  $("b-timer").textContent = "Start";
+  $("k-ph").textContent = "";
+}
+function stoperTik() {
+  const zostalo = tDl - (performance.now() - tStart) / 1000;
+  $("k-t").textContent = format(zostalo);
+  if (runda === 2) {
+    const minelo = tDl - zostalo;
+    $("k-ph").textContent = minelo < 20 ? `pokaz: ${Math.ceil(20 - minelo)} s` : "słowa";
+    if (minelo >= 20 && tSek < 20) { try { navigator.vibrate && navigator.vibrate(150); } catch (e) {} }
+    tSek = minelo;
+  }
+  if (zostalo <= 0) {
+    clearInterval(tId); tId = null;
+    $("k-timer").classList.add("end"); $("k-ph").textContent = "koniec";
+    try { navigator.vibrate && navigator.vibrate([200, 100, 200]); } catch (e) {}
+  }
+}
+function stoperStart() {
+  clearInterval(tId); tStart = performance.now(); tSek = 0; $("k-timer").classList.remove("end"); $("k-ph").textContent = "";
+  $("b-timer").textContent = "Od nowa"; tId = setInterval(stoperTik, 200); stoperTik();
+}
+$("b-timer").addEventListener("click", stoperStart);
+
+// ---------------------------------------------------------------- ekrany
+function pokazKarte() {
+  karta = losuj();
+  const cw = !!karta.tabu;
+  $("k-runda").textContent = runda === 1 ? "Runda 1" : "Runda 2 · zamiana ról";
+  $("k-talia").textContent = POZY.cw.includes(karta) ? "Ćwiczenia" : "Pozy";
+  $("k-zasada").textContent = runda === 1 ? "Tylko słowa" : "20 s pokazu, potem słowa";
+  $("k-nazwa").textContent = karta.nazwa;
+  $("k-widok").textContent = karta.widok === "z boku" ? "z boku · jaśniejsza: dalsza ręka i noga" : "z przodu · prawa ręka po lewej";
+  rysuj($("k-fig"), karta);
+  $("k-tabu").hidden = !cw || !karta.tabu.length;
+  $("k-chips").innerHTML = cw ? karta.tabu.map(t => `<span class="chip">${t}</span>`).join("") : "";
+  pokaz("s-karta");
+  stoperStart();
+}
+
+const CZESCI = ["tułów i głowa", "ręce", "nogi"];
+let ocena = [null, null, null];
+function pokazOcene() {
+  clearInterval(tId); tId = null;
+  $("o-runda").textContent = `Runda ${runda}`;
+  $("o-nazwa").textContent = karta.nazwa;
+  rysuj($("o-fig"), karta);
+  ocena = [null, null, null];
+  $("o-seg").innerHTML = CZESCI.map((c, i) => `<div class="it"><b>${c}</b><span class="bt">`
+    + `<button type="button" data-i="${i}" data-v="1" aria-pressed="false">tak</button>`
+    + `<button type="button" data-i="${i}" data-v="0" aria-pressed="false">nie</button></span></div>`).join("");
+  $("b-dalej").textContent = runda === 1 ? "Runda 2" : "Wynik";
+  pokaz("s-ocena");
+}
+$("o-seg").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  const i = +b.dataset.i; ocena[i] = +b.dataset.v;
+  b.parentElement.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+});
+
+$("talie").addEventListener("click", e => {
+  const b = e.target.closest(".choice"); if (!b) return;
+  talia = b.dataset.talia;
+  $("talie").querySelectorAll(".choice").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+});
+$("b-start").addEventListener("click", () => { runda = 1; wyniki = [null, null]; pokazKarte(); });
+$("b-inna").addEventListener("click", pokazKarte);
+$("b-pokaz").addEventListener("click", pokazOcene);
+$("b-dalej").addEventListener("click", () => {
+  wyniki[runda - 1] = ocena.reduce((a, v) => a + (v || 0), 0);
+  if (runda === 1) { runda = 2; pokazKarte(); return; }
+  $("w1").textContent = `${wyniki[0]}/3`; $("w2").textContent = `${wyniki[1]}/3`;
+  pokaz("s-koniec");
+});
+$("b-znowu").addEventListener("click", () => { runda = 1; wyniki = [null, null]; pokazKarte(); });
+</script>
+</body>
+</html>
