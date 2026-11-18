@@ -3,12 +3,12 @@
 Statyczne strony do ćwiczeń z Teorii nauczania ruchu (AWF Warszawa).
 
 - `index.html` – strona startowa **Narzędzia TNR** z listą narzędzi (karta na narzędzie). Nowe narzędzie = nowy folder (np. `stroop/index.html`) + karta na stronie startowej.
-- `speedtest/index.html` – **Speedtest reakcji**, pełny protokół na zajęcia 3: 9 zadań po 3–5 prób (~4 min). RT prosty / wybór 2 / wybór 4, sygnał po odliczaniu, trafienie w rytm, ruchomy cel, go/no-go, przeszukiwanie wzrokowe, Stroop; szata AWF (zieleń, Lato). Każde zadanie można powtórzyć osobno. Tablica wyników przez Google Apps Script (`apps_script/`, instrukcja w `apps_script/README.md`).
+- `speedtest/index.html` – **Speedtest reakcji**, pełny protokół na zajęcia 3: 9 zadań po 3–5 prób (~4 min). RT prosty / wybór 2 / wybór 4, sygnał po odliczaniu, trafienie w rytm, ruchomy cel, go/no-go, przeszukiwanie wzrokowe, Stroop; szata jak na kajetan.ciunelis.com (czerń, krem, zieleń butelkowa, Nunito). Każde zadanie można powtórzyć osobno. Tablica wyników przez Google Apps Script (`apps_script/`, instrukcja w `apps_script/README.md`).
   - studenci: `https://tnr.ciunelis.com/speedtest/?kod=WT&pin=…` (link z PIN-em z zakładki `piny` arkusza; `&proby=3` = wersja skrócona)
   - rzutnik: `https://tnr.ciunelis.com/speedtest/?tablica&kod=WT` (wykresy grupy i ranking)
 - `protokol/index.html` – tylko przekierowanie starego adresu na `/speedtest/` z zachowaniem parametrów (linki z PIN-ami wygenerowane 5.10 mają jeszcze `/protokol/`).
 - `bez-pokazu/index.html` – **Instrukcja bez pokazu**, gra w parach do zajęć 8 (metody: instruktaż a pokaz). Trener widzi postać, uczeń stoi tyłem; stoper 1,5 min startuje po wylosowaniu karty; runda 1 tylko słowa, runda 2 z 20 s pokazu; ocena tułów / ręce / nogi. Tabu edytuje się na stronie przeglądu (artefakt, `_skrypty/build_przeglad_pozy.py`) i przenosi do bloku `POZY`. Dwie talie: ćwiczenia z zakazanymi słowami (nazwy i potoczne synonimy) oraz pozy bez nazw z cieszynkami i memami (Ronaldo, Bolt, Messi, dab…). Postacie rysowane w SVG z kątów stawów (blok `POZY`: tułów, głowa, ręce, nogi, typ dłoni, kąt stopy, kierunek twarzy); niczego nie wysyła.
-- `fonts/` – lokalne kopie czcionek Lato i Manrope (woff2, łacina + łacina rozszerzona) z licencjami OFL; strony nie łączą się z Google Fonts.
+- `fonts/` – lokalne kopie czcionek (woff2, łacina + łacina rozszerzona) z licencjami OFL; strony używają Nunito, Lato i Manrope zostały po poprzedniej szacie; strony nie łączą się z Google Fonts.
 - `czas-reakcji/index.html` – pierwszy, prosty test czasu reakcji (prosty, wybór 2, wybór 4; bodziec wzrok / dźwięk / wibracja). Pomiar w całości w przeglądarce, bez wysyłania danych.
 
 ## Publikacja

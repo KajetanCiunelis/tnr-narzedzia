@@ -6,83 +6,82 @@
 <meta name="color-scheme" content="light dark">
 <title>Instrukcja bez pokazu</title>
 <meta name="description" content="Gra w parach do ćwiczeń z Teorii nauczania ruchu: ustaw partnera w pozycji tylko słowami, bez pokazu i bez zakazanych słów.">
-<link rel="stylesheet" href="../fonts/lato.css">
+<link rel="stylesheet" href="../fonts/nunito.css">
 <style>
-/* Szata AWF jak na stronie startowej: zieleń 006341 / 004A30, biel, odcienie zieleni, Lato.
+/* Szata jak na stronie startowej (kajetan.ciunelis.com): czerń, krem, zieleń butelkowa 155E3F, Nunito.
    Żółty FBAE40 tylko jako kształt, nigdy jako tekst na bieli. */
 :root{
   color-scheme:light;
-  --bg:#ffffff; --panel:#f2f7f4; --tile:#e3eee8; --line:#c9d6cf;
-  --ink:#1f2933; --muted:#55636b;
-  --brand:#006341; --brand-dk:#004a30; --accent:#006341; --on-brand:#ffffff; --brand-sub:#cfe3d8;
-  --fig:#006341; --fig-far:#91bcac; --ground:#9aa8a1;
+  --bg:#f0ebe0; --panel:#e6e0d2; --tile:#d9d2c2; --line:#c9c1b0;
+  --ink:#1a1a1a; --muted:#6b6660;
+  --brand:#155e3f; --brand-dk:#0f4630; --accent:#155e3f; --on-brand:#f0ebe0; --brand-sub:#b9b4a9;
+  --fig:#155e3f; --fig-far:#9db5a4; --ground:#a8a296;
   --bad:#a3322b; --bad-soft:#f8e3e1;
   --yellow:#fbae40;
 }
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
   color-scheme:dark;
-  --bg:#0d1613; --panel:#14211c; --tile:#1c2d26; --line:#293b33;
-  --ink:#e8f1ec; --muted:#a3b6ac; --accent:#7ad3a6;
-  --fig:#7ad3a6; --fig-far:#3d6853; --ground:#4b5d55;
+  --bg:#1a1a1a; --panel:#242424; --tile:#303030; --line:#3d3d3d;
+  --ink:#f0ebe0; --muted:#a39d94; --accent:#4caf7d;
+  --fig:#4caf7d; --fig-far:#356b4f; --ground:#5c5852;
   --bad:#f08a80; --bad-soft:#3b1f1c;
 }}
 :root[data-theme="dark"]{
   color-scheme:dark;
-  --bg:#0d1613; --panel:#14211c; --tile:#1c2d26; --line:#293b33;
-  --ink:#e8f1ec; --muted:#a3b6ac; --accent:#7ad3a6;
-  --fig:#7ad3a6; --fig-far:#3d6853; --ground:#4b5d55;
+  --bg:#1a1a1a; --panel:#242424; --tile:#303030; --line:#3d3d3d;
+  --ink:#f0ebe0; --muted:#a39d94; --accent:#4caf7d;
+  --fig:#4caf7d; --fig-far:#356b4f; --ground:#5c5852;
   --bad:#f08a80; --bad-soft:#3b1f1c;
 }
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:Lato,"Segoe UI",Arial,sans-serif;font-size:16px;line-height:1.5;-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Nunito,"Segoe UI",Arial,sans-serif;font-size:16px;line-height:1.5;-webkit-text-size-adjust:100%}
 .wrap{max-width:640px;margin:0 auto;padding-inline:16px;padding-block:16px 40px;display:flex;flex-direction:column;gap:16px}
 .scr{display:flex;flex-direction:column;gap:16px}
-.band{position:relative;background:var(--brand);color:var(--on-brand);border-radius:14px;padding:20px 18px 18px;display:flex;flex-direction:column;gap:6px;overflow:hidden}
-.band .mark{width:36px;height:6px;background:var(--yellow);border-radius:1px}
+.band{position:relative;background:#1a1a1a;border-bottom:3px solid var(--brand);color:var(--on-brand);border-radius:0;padding:20px 18px 18px;display:flex;flex-direction:column;gap:6px;overflow:hidden}
+.band .mark{display:none}
 .band h1{font-size:26px;font-weight:900;margin:0;line-height:1.15;text-wrap:balance}
 .band p{margin:0;color:var(--brand-sub);max-width:54ch}
 .band a{color:var(--on-brand);font-weight:700;font-size:14px}
-.band::after{content:"";position:absolute;right:-28px;bottom:-28px;width:96px;height:96px;border:14px solid rgba(255,255,255,.07);border-radius:50%}
 h2{font-size:15px;font-weight:900;margin:4px 0 0;color:var(--accent)}
-.panel{background:var(--panel);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.panel{background:var(--panel);border-radius:0;padding:16px;display:flex;flex-direction:column;gap:10px}
 .panel ol,.panel ul{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:4px}
 .choices{display:flex;flex-direction:column;gap:8px}
-.choice{display:flex;gap:12px;align-items:flex-start;background:var(--panel);border:1.5px solid transparent;border-radius:12px;padding:14px;cursor:pointer;text-align:left;font:inherit;color:inherit}
+.choice{display:flex;gap:12px;align-items:flex-start;background:var(--panel);border:1.5px solid transparent;border-radius:0;padding:14px;cursor:pointer;text-align:left;font:inherit;color:inherit}
 .choice[aria-pressed="true"]{border-color:var(--accent);background:var(--tile)}
 .choice .dot{flex:0 0 20px;height:20px;border-radius:50%;border:2px solid var(--accent);margin-top:2px;display:grid;place-items:center}
 .choice[aria-pressed="true"] .dot::after{content:"";width:10px;height:10px;border-radius:50%;background:var(--accent)}
 .choice b{display:block;font-size:17px}
 .choice span.ds{font-size:14px;color:var(--muted)}
 button{font:inherit}
-.btn{appearance:none;border:0;border-radius:12px;background:var(--brand);color:var(--on-brand);font-weight:900;font-size:18px;padding:14px 18px;cursor:pointer;width:100%}
+.btn{appearance:none;border:0;border-radius:0;background:var(--brand);color:var(--on-brand);font-weight:900;font-size:18px;padding:14px 18px;cursor:pointer;width:100%}
 .btn:hover{background:var(--brand-dk)}
 .btn.sec{background:transparent;color:var(--accent);border:1.5px solid var(--accent)}
-.btn:focus-visible,.choice:focus-visible,.seg button:focus-visible{outline:3px solid var(--yellow);outline-offset:2px}
+.btn:focus-visible,.choice:focus-visible,.seg button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .row{display:flex;gap:10px}
 .row>*{flex:1 1 0}
 .stage{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:14px;color:var(--muted);font-weight:700}
-.stage .tag{background:var(--tile);color:var(--ink);border-radius:999px;padding:3px 10px}
-.rule{background:var(--brand);color:var(--on-brand);border-radius:12px;padding:12px 14px;font-weight:700}
-.card{background:var(--panel);border-radius:14px;padding:12px 12px 14px;display:flex;flex-direction:column;gap:10px;align-items:stretch}
+.stage .tag{background:var(--tile);color:var(--ink);border-radius:0;padding:3px 10px}
+.rule{background:var(--brand);color:var(--on-brand);border-radius:0;padding:12px 14px;font-weight:700}
+.card{background:var(--panel);border-radius:0;padding:12px 12px 14px;display:flex;flex-direction:column;gap:10px;align-items:stretch}
 .card .nm{font-size:20px;font-weight:900;text-align:center;text-wrap:balance}
 .card .sub{font-size:14px;color:var(--muted);text-align:center;margin-top:-6px}
 .fig{width:100%;max-height:46vh;display:block}
 .taboo{display:flex;flex-direction:column;gap:6px}
 .taboo .lbl{font-size:13px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;color:var(--bad)}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
-.chip{background:var(--bad-soft);color:var(--bad);border-radius:999px;padding:3px 11px;font-weight:700;text-decoration:line-through;text-decoration-thickness:1.5px}
+.chip{background:var(--bad-soft);color:var(--bad);border-radius:0;padding:3px 11px;font-weight:700;text-decoration:line-through;text-decoration-thickness:1.5px}
 .timer{display:flex;align-items:center;gap:12px}
 .timer .t{font-size:40px;font-weight:900;font-variant-numeric:tabular-nums;min-width:4.2ch}
 .timer .ph{font-size:14px;color:var(--muted);font-weight:700}
 .timer.end .t{color:var(--bad)}
 .seg{display:flex;flex-direction:column;gap:8px}
-.seg .it{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--bg);border-radius:10px;padding:8px 10px}
+.seg .it{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--bg);border-radius:0;padding:8px 10px}
 .seg .it b{font-size:16px}
 .seg .bt{display:flex;gap:6px}
-.seg button{border:1.5px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;padding:6px 12px;font-weight:700;cursor:pointer}
+.seg button{border:1.5px solid var(--line);background:var(--bg);color:var(--ink);border-radius:0;padding:6px 12px;font-weight:700;cursor:pointer}
 .seg button[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:var(--on-brand)}
 .score{display:flex;gap:10px}
-.score .s{flex:1;background:var(--panel);border-radius:12px;padding:12px;text-align:center}
+.score .s{flex:1;background:var(--panel);border-radius:0;padding:12px;text-align:center}
 .score .s b{display:block;font-size:30px;font-weight:900;color:var(--accent);font-variant-numeric:tabular-nums}
 .score .s span{font-size:14px;color:var(--muted)}
 .note{font-size:14px;color:var(--muted);margin:0;max-width:60ch}
